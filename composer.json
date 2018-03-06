@@ -1,0 +1,32 @@
+{
+  "name": "leadingsystems/merconis-languageselector",
+  "description": "Merconis language selector bundle for Contao 4",
+  "keywords": [
+    "contao",
+    "leading systems",
+    "merconis",
+    "bundle"
+  ],
+  "type": "contao-bundle",
+  "require": {
+    "php": ">=7.0.0",
+    "contao/core-bundle": "~4.4"
+  },
+  "autoload": {
+    "psr-4": {
+      "LeadingSystems\\LanguageSelectorBundle\\": "src/"
+    },
+    "classmap": [
+      "src/Resources/contao/"
+    ],
+    "exclude-from-classmap": [
+      "src/Resources/contao/config/",
+      "src/Resources/contao/dca/",
+      "src/Resources/contao/languages/",
+      "src/Resources/contao/templates/"
+    ]
+  },
+  "extra": {
+    "contao-manager-plugin": "LeadingSystems\\LanguageSelectorBundle\\ContaoManager\\Plugin"
+  }
+}
