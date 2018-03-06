@@ -28,6 +28,9 @@
     ]
   },
   "extra": {
-    "contao-manager-plugin": "LeadingSystems\\LanguageSelectorBundle\\ContaoManager\\Plugin"
+    "contao-manager-plugin": "LeadingSystems\\LanguageSelectorBundle\\ContaoManager\\Plugin",
+    "branch-alias": {
+      "dev-master": "2.0.x-dev"
+    }
   }
 }
