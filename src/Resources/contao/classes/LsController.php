@@ -37,9 +37,12 @@ class LsController {
 		 * Seiten f�r eine Sprache ermittelt werden, so finden diese Verwendung, ist das aber nicht m�glich, so kommt eben
 		 * die hier schon eingetragene Root-Page zum Einsatz.
 		 */
-		\System::loadLanguageFile('languages');
 		$languagesForCurrentDomain = array();
 		while ($objRootPagesWithSameDomain->next()) {
+		    /*
+		     * Load the languages array in every language so that we can show each language name in that language
+		     */
+            \System::loadLanguageFile('languages', $objRootPagesWithSameDomain->language, true);
 			if (!in_array($objRootPagesWithSameDomain->language, $languagesForCurrentDomain)) {
 				$languagesForCurrentDomain[$objRootPagesWithSameDomain->language] = array(
 					'alias' => $objPage->language != $objRootPagesWithSameDomain->language ? $objRootPagesWithSameDomain->alias : $objPage->alias,
@@ -49,6 +52,10 @@ class LsController {
 				);
 			}
 		}
+		/*
+		 * Just for safety, load the languages array in the current page language
+		 */
+		\System::loadLanguageFile('languages', $objPage->language, true);
 
 		/*
 		 * Ermitteln der korrespondierenden Hauptsprach-Seiten-ID. Ist die Seite selbst Hauptsprachseite, so ist das

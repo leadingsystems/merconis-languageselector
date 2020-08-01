@@ -1,21 +1,32 @@
 <div class="ls_languageSelector <?php echo $this->class; ?> block"<?php echo $this->cssID; ?><?php if ($this->style): ?> style="<?php echo $this->style; ?>"<?php endif; ?>>
 <!-- indexer::stop -->
-	<?php
-		foreach ($this->correspondingPages as $language => $correspondingPage) {
-			?>
-			<?php if ($this->currentLanguage != $language): ?>
-				<a href="<?php echo $correspondingPage['href'] ?>" style="text-decoration: none;" title="<?php echo $correspondingPage['languageTitle'] ?>">
-			<?php else: ?>
-				<span title="<?php echo $correspondingPage['languageTitle'] ?>">
-			<?php endif; ?>
-				<?php echo $language ?>
-			<?php if ($this->currentLanguage != $language): ?>
-				</a>
-			<?php else: ?>
-				</span>
-			<?php endif; ?>
-			<?php
-		}
-	?>
+    <div class="current-language-info">
+        <?php echo sprintf($GLOBALS['TL_LANG']['MSC']['infoTextCurrentLanguage'], $this->correspondingPages[$this->currentLanguage]['languageTitle']); ?>
+    </div>
+    <?php
+        if (count($this->correspondingPages) > 1) {
+            ?>
+            <div class="more-available-languages">
+                <h3><?php echo $GLOBALS['TL_LANG']['MSC']['infoTextOtherAvailableLanguages']; ?></h3>
+                <ul>
+                <?php
+                    foreach ($this->correspondingPages as $str_language => $arr_correspondingPage) {
+                        if ($str_language === $this->currentLanguage) {
+                            continue;
+                        }
+                        ?>
+                        <li>
+                            <a class="available-language" href="<?php echo $arr_correspondingPage['href'] ?>" title="<?php echo $arr_correspondingPage['languageTitle'] ?>">
+                                <?php echo $arr_correspondingPage['languageTitle']; ?>
+                            </a>
+                        </li>
+                        <?php
+                    }
+                ?>
+                </ul>
+            </div>
+            <?php
+        }
+    ?>
 <!-- indexer::continue -->
 </div>
