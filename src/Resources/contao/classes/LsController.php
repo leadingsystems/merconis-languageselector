@@ -110,7 +110,30 @@ class LsController {
 						}
 					}
 
-					$languagesForCurrentDomain[$pageDetails->language]['href'] = \Controller::generateFrontendUrl($objCorrespondingPages->row(), $queryString, $pageDetails->language).($secondQueryString ? '?'.$secondQueryString : '');
+                    if(\Input::get('auto_item')) {
+                        /*
+                         * Approach 1
+                         */
+                        $languagesForCurrentDomain[$pageDetails->language]['href'] = \PageModel::findByAlias($pageDetails->parentAlias);
+                        /*
+                         * Approach 2
+                         */
+//                        $languagesForCurrentDomain[$pageDetails->language]['href'] = \Controller::generateFrontendUrl($objCorrespondingPages->row());
+                        /*
+                         * Approach 3
+                         * Pseudocode:
+                         * $dbPage = findWhichModulTypeIsUsing($pageID) -> findDbTableName;
+                         * $objCorrespondingChannels = \Database::getInstance()->prepare("SELECT * FROM ? WHERE jumpTo = ?")->execute($dbPage, $pageDetails->id);
+                         * while ($objCorrespondingChannels->next()) {
+                         *     $newsID = $objCorrespondingChannels->id;
+                         *     $modulID = findThememodulUse($newsID)
+                         *     return findPageUse($modulID)
+                         * }
+                         */
+
+                    } else {
+                        $languagesForCurrentDomain[$pageDetails->language]['href'] = \Controller::generateFrontendUrl($objCorrespondingPages->row(), $queryString, $pageDetails->language).($secondQueryString ? '?'.$secondQueryString : '');
+                    }
 				}
 			}
 		}
