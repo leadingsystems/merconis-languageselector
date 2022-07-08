@@ -110,7 +110,12 @@ class LsController {
 						}
 					}
 
-					$languagesForCurrentDomain[$pageDetails->language]['href'] = \Controller::generateFrontendUrl($objCorrespondingPages->row(), $queryString, $pageDetails->language).($secondQueryString ? '?'.$secondQueryString : '');
+                    if(\Input::get('auto_item')) {
+                        $obj_targetPageCollection = \PageModel::findByAlias($pageDetails->parentAlias);
+                        $languagesForCurrentDomain[$pageDetails->language]['href'] = $obj_targetPageCollection->current()->getFrontendUrl();
+                    } else {
+                        $languagesForCurrentDomain[$pageDetails->language]['href'] = \Controller::generateFrontendUrl($objCorrespondingPages->row(), $queryString, $pageDetails->language).($secondQueryString ? '?'.$secondQueryString : '');
+                    }
 				}
 			}
 		}
