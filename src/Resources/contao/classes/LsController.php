@@ -42,12 +42,14 @@ class LsController {
 		    /*
 		     * Load the languages array in every language so that we can show each language name in that language
 		     */
+            $obj_pageModel = \PageModel::findByAlias($objPage->language != $objRootPagesWithSameDomain->language ? $objRootPagesWithSameDomain->row()['alias'] : $objPage->row()['alias']);
+
             \System::loadLanguageFile('languages', $objRootPagesWithSameDomain->language, true);
 			if (!in_array($objRootPagesWithSameDomain->language, $languagesForCurrentDomain)) {
 				$languagesForCurrentDomain[$objRootPagesWithSameDomain->language] = array(
 					'alias' => $objPage->language != $objRootPagesWithSameDomain->language ? $objRootPagesWithSameDomain->alias : $objPage->alias,
 					'id' => $objPage->language != $objRootPagesWithSameDomain->language ? $objRootPagesWithSameDomain->id : $objPage->id,
-					'href' => \Controller::generateFrontendUrl($objPage->language != $objRootPagesWithSameDomain->language ? $objRootPagesWithSameDomain->row() : $objPage->row()),
+					'href' => $obj_pageModel->current()->getFrontendUrl(),
 					'languageTitle' => $GLOBALS['TL_LANG']['LNG'][$objRootPagesWithSameDomain->language]
 				);
 			}
