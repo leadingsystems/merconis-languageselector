@@ -116,10 +116,8 @@ class LsController {
                         $obj_targetPageCollection = \PageModel::findByAlias($pageDetails->parentAlias);
                         $languagesForCurrentDomain[$pageDetails->language]['href'] = $obj_targetPageCollection->current()->getFrontendUrl();
                     } else {
-                        /*
-                         * @toDo: replace generateFrontendURL()
-                         */
-                        $languagesForCurrentDomain[$pageDetails->language]['href'] = \Controller::generateFrontendUrl($objCorrespondingPages->row(), $queryString, $pageDetails->language).($secondQueryString ? '?'.$secondQueryString : '');
+                        $obj_targetPageCollection = \PageModel::findByAlias($objCorrespondingPages->row()['alias']);
+                        $languagesForCurrentDomain[$pageDetails->language]['href'] = $obj_targetPageCollection->current()->getFrontendUrl();
                     }
 				}
 			}
