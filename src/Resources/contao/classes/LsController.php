@@ -117,7 +117,7 @@ class LsController {
                         $languagesForCurrentDomain[$pageDetails->language]['href'] = $obj_targetPageCollection->current()->getFrontendUrl();
                     } else {
                         $obj_targetPageCollection = \PageModel::findByAlias($objCorrespondingPages->row()['alias']);
-                        $languagesForCurrentDomain[$pageDetails->language]['href'] = $obj_targetPageCollection->current()->getFrontendUrl();
+                        $languagesForCurrentDomain[$pageDetails->language]['href'] = $obj_targetPageCollection->current()->getFrontendUrl($objCorrespondingPages->row(), $queryString, $pageDetails->language).($secondQueryString ? '?'.$secondQueryString : '');
                     }
 				}
 			}
