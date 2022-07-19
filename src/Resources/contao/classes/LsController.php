@@ -118,7 +118,6 @@ class LsController {
                     } else {
                         $obj_targetPageCollection = \PageModel::findByAlias($objCorrespondingPages->row()['alias']);
                         $languagesForCurrentDomain[$pageDetails->language]['href'] = $obj_targetPageCollection->current()->getFrontendUrl($queryString, $pageDetails->language).($secondQueryString ? '?'.$secondQueryString : '');
-
                     }
 				}
 			}
