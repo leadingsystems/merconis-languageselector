@@ -42,7 +42,7 @@ class LsController {
 		    /*
 		     * Load the languages array in every language so that we can show each language name in that language
 		     */
-            $obj_pageModel = \PageModel::findByAlias($objPage->language != $objRootPagesWithSameDomain->language ? $objRootPagesWithSameDomain->row()['alias'] : $objPage->row()['alias']);
+            $obj_pageModel = \PageModel::findByAlias($objPage->type !== 'regular' || $objPage->language != $objRootPagesWithSameDomain->language ? $objRootPagesWithSameDomain->row()['alias'] : $objPage->row()['alias']);
 
             \System::loadLanguageFile('languages', $objRootPagesWithSameDomain->language, true);
 			if (!in_array($objRootPagesWithSameDomain->language, $languagesForCurrentDomain)) {
@@ -114,10 +114,14 @@ class LsController {
 
                     if(\Input::get('auto_item')) {
                         $obj_targetPageCollection = \PageModel::findByAlias($pageDetails->parentAlias);
-                        $languagesForCurrentDomain[$pageDetails->language]['href'] = $obj_targetPageCollection->current()->getFrontendUrl();
+                        if ($obj_targetPageCollection->current()->type === 'regular') {
+                            $languagesForCurrentDomain[$pageDetails->language]['href'] = $obj_targetPageCollection->current()->getFrontendUrl();
+                        }
                     } else {
                         $obj_targetPageCollection = \PageModel::findByAlias($objCorrespondingPages->row()['alias']);
-                        $languagesForCurrentDomain[$pageDetails->language]['href'] = $obj_targetPageCollection->current()->getFrontendUrl($queryString, $pageDetails->language).($secondQueryString ? '?'.$secondQueryString : '');
+                        if ($obj_targetPageCollection->current()->type === 'regular') {
+                            $languagesForCurrentDomain[$pageDetails->language]['href'] = $obj_targetPageCollection->current()->getFrontendUrl($queryString, $pageDetails->language) . ($secondQueryString ? '?' . $secondQueryString : '');
+                        }
                     }
 				}
 			}
