@@ -42,6 +42,7 @@ class LsController {
 		    /*
 		     * Load the languages array in every language so that we can show each language name in that language
 		     */
+
             $obj_pageModel = \PageModel::findByAlias($objPage->type !== 'regular' || $objPage->language != $objRootPagesWithSameDomain->language ? $objRootPagesWithSameDomain->row()['alias'] : $objPage->row()['alias']);
 
             \System::loadLanguageFile('languages', $objRootPagesWithSameDomain->language, true);
