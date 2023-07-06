@@ -125,7 +125,7 @@ class LsController {
                     } else {
                         $obj_targetPageCollection = \PageModel::findByAlias($objCorrespondingPages->row()['alias']);
                         if ($obj_targetPageCollection->current()->type === 'regular') {
-                            $languagesForCurrentDomain[$pageDetails->language]['href'] = $obj_targetPageCollection->current()->getFrontendUrl($queryString, $pageDetails->language) . ($secondQueryString ? '?' . $secondQueryString : '');
+                            $languagesForCurrentDomain[$pageDetails->language]['href'] = $obj_targetPageCollection->current()->getFrontendUrl($queryString) . ($secondQueryString ? '?' . $secondQueryString : '');
                         }
                     }
 				}
