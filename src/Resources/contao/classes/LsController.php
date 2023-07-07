@@ -45,20 +45,24 @@ class LsController {
 
             $obj_pageModel = \PageModel::findByAlias($objPage->type !== 'regular' || $objPage->language != $objRootPagesWithSameDomain->language ? $objRootPagesWithSameDomain->row()['alias'] : $objPage->row()['alias']);
 
-            \System::loadLanguageFile('languages', $objRootPagesWithSameDomain->language, true);
+            if (!isset($GLOBALS['merconis-languageselector_globals']['cache_language_files'][$objRootPagesWithSameDomain->language])) {
+                \System::loadLanguageFile('languages', $objRootPagesWithSameDomain->language, true);
+                $GLOBALS['merconis-languageselector_globals']['cache_language_files'][$objRootPagesWithSameDomain->language] = $GLOBALS['TL_LANG']['LNG'];
+                /*
+                 * Just for safety, load the languages array in the current page language
+                 */
+                \System::loadLanguageFile('languages', $objPage->language, true);
+            }
+
 			if (!in_array($objRootPagesWithSameDomain->language, $languagesForCurrentDomain)) {
 				$languagesForCurrentDomain[$objRootPagesWithSameDomain->language] = array(
 					'alias' => $objPage->language != $objRootPagesWithSameDomain->language ? $objRootPagesWithSameDomain->alias : $objPage->alias,
 					'id' => $objPage->language != $objRootPagesWithSameDomain->language ? $objRootPagesWithSameDomain->id : $objPage->id,
 					'href' => $obj_pageModel->current()->getFrontendUrl(),
-					'languageTitle' => $GLOBALS['TL_LANG']['LNG'][$objRootPagesWithSameDomain->language]
+					'languageTitle' => $GLOBALS['merconis-languageselector_globals']['cache_language_files'][$objRootPagesWithSameDomain->language][$objRootPagesWithSameDomain->language]
 				);
 			}
 		}
-		/*
-		 * Just for safety, load the languages array in the current page language
-		 */
-		\System::loadLanguageFile('languages', $objPage->language, true);
 
 		/*
 		 * Ermitteln der korrespondierenden Hauptsprach-Seiten-ID. Ist die Seite selbst Hauptsprachseite, so ist das
@@ -121,7 +125,7 @@ class LsController {
                     } else {
                         $obj_targetPageCollection = \PageModel::findByAlias($objCorrespondingPages->row()['alias']);
                         if ($obj_targetPageCollection->current()->type === 'regular') {
-                            $languagesForCurrentDomain[$pageDetails->language]['href'] = $obj_targetPageCollection->current()->getFrontendUrl($queryString, $pageDetails->language) . ($secondQueryString ? '?' . $secondQueryString : '');
+                            $languagesForCurrentDomain[$pageDetails->language]['href'] = $obj_targetPageCollection->current()->getFrontendUrl($queryString) . ($secondQueryString ? '?' . $secondQueryString : '');
                         }
                     }
 				}
