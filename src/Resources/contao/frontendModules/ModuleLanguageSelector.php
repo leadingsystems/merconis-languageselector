@@ -2,6 +2,8 @@
 
 namespace LeadingSystems\LanguageSelector;
 
+use Contao\System;
+
 class ModuleLanguageSelector extends \Module {
 	protected $arrPages = array();
 
@@ -9,7 +11,7 @@ class ModuleLanguageSelector extends \Module {
 	
 	
 	public function generate() {
-		if (TL_MODE == 'BE') {
+		if (System::getContainer()->get('merconis.routing.scope_matcher')->isBackend()) {
 			$objTemplate = new \BackendTemplate('be_wildcard');
 
 			$objTemplate->wildcard = '### LEADING SYSTEMS LANGUAGE SELECTOR ###';
