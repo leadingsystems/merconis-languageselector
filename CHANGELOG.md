@@ -1,7 +1,7 @@
 Leading Systems Contao LanguageSelector bundle changelog
 ===========================================
 
-### 3.1.2 (2023-07-07)
+### 3.1.3 (2023-09-22)
  * fix some issues for Contao 5
 
 ### 3.1.2 (2023-07-07)
