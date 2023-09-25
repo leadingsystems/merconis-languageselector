@@ -11,7 +11,7 @@ class ModuleLanguageSelector extends \Module {
 	
 	
 	public function generate() {
-		if (System::getContainer()->get('merconis.routing.scope_matcher')->isBackend()) {
+		if (System::getContainer()->get('merconis.routing.scope')->isBackend()) {
 			$objTemplate = new \BackendTemplate('be_wildcard');
 
 			$objTemplate->wildcard = '### LEADING SYSTEMS LANGUAGE SELECTOR ###';
