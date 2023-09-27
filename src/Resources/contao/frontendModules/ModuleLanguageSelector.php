@@ -3,6 +3,7 @@
 namespace LeadingSystems\LanguageSelector;
 
 use Contao\System;
+use Symfony\Component\HttpFoundation\Request;
 
 class ModuleLanguageSelector extends \Module {
 	protected $arrPages = array();
@@ -11,7 +12,11 @@ class ModuleLanguageSelector extends \Module {
 	
 	
 	public function generate() {
-		if (System::getContainer()->get('merconis.routing.scope')->isBackend()) {
+		if (
+            System::getContainer()->get('contao.routing.scope_matcher')->isBackendRequest(
+                System::getContainer()->get('request_stack')->getCurrentRequest() ?? Request::create('')
+            )
+        ) {
 			$objTemplate = new \BackendTemplate('be_wildcard');
 
 			$objTemplate->wildcard = '### LEADING SYSTEMS LANGUAGE SELECTOR ###';
