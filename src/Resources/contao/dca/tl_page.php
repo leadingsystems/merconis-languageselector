@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use Contao\PageModel;
+
 /*
  * Einf�gen eines Auswahlfelds zur Auswahl der korrespondierenden Seite der Hauptsprache, sofern die aktuelle Seite
  * ein Child einer Nicht-Hauptsprache ist. Hierbei werden alle Seiten zur Auswahl angeboten, f�r die gilt:

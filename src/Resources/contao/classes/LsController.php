@@ -4,6 +4,12 @@ declare(strict_types=1);
 
 namespace LeadingSystems\LanguageSelector;
 
+use Contao\Database;
+use Contao\Environment;
+use Contao\Input;
+use Contao\PageModel;
+use Contao\System;
+
 class LsController
 {
     public function getCorrespondingLanguagesForCurrentRootPage($pageID = false)
@@ -111,26 +117,26 @@ class LsController
                          */
                         $arrExcludedGetParameters = ['articles', 'auto_item', 'language'];
 
-                        foreach ($_GET as $k => $v) {
+                        foreach (array_keys($_GET) as $k) {
                             if (\in_array($k, $arrExcludedGetParameters, true)) {
                                 continue;
                             }
 
-                            if (!preg_match('/'.preg_quote($k, '/').'=/', \Environment::get('request'))) {
-                                $queryString .= '/'.$k.'/'.\Input::get($k);
+                            if (!preg_match('/'.preg_quote($k, '/').'=/', Environment::get('request'))) {
+                                $queryString .= '/'.$k.'/'. Input::get($k);
                             } else {
-                                $secondQueryString .= ($secondQueryString ? '&amp;' : '').$k.'='.\Input::get($k);
+                                $secondQueryString .= ($secondQueryString ? '&amp;' : '').$k.'='. Input::get($k);
                             }
                         }
                     }
 
                     if (\Input::get('auto_item')) {
-                        $obj_targetPageCollection = \PageModel::findByAlias($pageDetails->parentAlias);
+                        $obj_targetPageCollection = PageModel::findByAlias($pageDetails->parentAlias);
                         if ('regular' === $obj_targetPageCollection->current()->type) {
                             $languagesForCurrentDomain[$pageDetails->language]['href'] = $obj_targetPageCollection->current()->getFrontendUrl();
                         }
                     } else {
-                        $obj_targetPageCollection = \PageModel::findByAlias($objCorrespondingPages->row()['alias']);
+                        $obj_targetPageCollection = PageModel::findByAlias($objCorrespondingPages->row()['alias']);
                         if ('regular' === $obj_targetPageCollection->current()->type) {
                             $languagesForCurrentDomain[$pageDetails->language]['href'] = $obj_targetPageCollection->current()->getFrontendUrl($queryString).($secondQueryString ? '?'.$secondQueryString : '');
                         }
@@ -141,7 +147,7 @@ class LsController
 
         if (isset($GLOBALS['LS_LANGUAGESELECTOR_HOOKS']['modifyLanguageLinks']) && \is_array($GLOBALS['LS_LANGUAGESELECTOR_HOOKS']['modifyLanguageLinks'])) {
             foreach ($GLOBALS['LS_LANGUAGESELECTOR_HOOKS']['modifyLanguageLinks'] as $mccb) {
-                $objMccb = \System::importStatic($mccb[0]);
+                $objMccb = System::importStatic($mccb[0]);
                 $languagesForCurrentDomain = $objMccb->{$mccb[1]}($languagesForCurrentDomain, $objPage->language);
             }
         }
@@ -160,8 +166,8 @@ class LsController
             return $mainLanguagePageID;
         }
 
-        $objPageDetails = \PageModel::findWithDetails($pageID);
-        $objRootPage = \Database::getInstance()->prepare('SELECT * FROM `tl_page` WHERE `id` = ?')
+        $objPageDetails = PageModel::findWithDetails($pageID);
+        $objRootPage = Database::getInstance()->prepare('SELECT * FROM `tl_page` WHERE `id` = ?')
             ->limit(1)
             ->execute($objPageDetails->rootId)
         ;
@@ -173,7 +179,7 @@ class LsController
         if ($objRootPage->fallback) {
             $mainLanguagePageID = $pageID;
         } else {
-            $obj_correspondingMainLanguagePageDetails = \PageModel::findWithDetails($objPageDetails->ls_cnc_languageSelector_correspondingMainLanguagePage);
+            $obj_correspondingMainLanguagePageDetails = PageModel::findWithDetails($objPageDetails->ls_cnc_languageSelector_correspondingMainLanguagePage);
             if ($obj_correspondingMainLanguagePageDetails->domain === $objPageDetails->domain) {
                 $mainLanguagePageID = $objPageDetails->ls_cnc_languageSelector_correspondingMainLanguagePage;
             }
