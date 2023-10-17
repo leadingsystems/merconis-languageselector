@@ -123,9 +123,9 @@ class LsController
                             }
 
                             if (!preg_match('/'.preg_quote($k, '/').'=/', Environment::get('request'))) {
-                                $queryString .= '/'.$k.'/'. Input::get($k);
+                                $queryString .= '/'.$k.'/'.Input::get($k);
                             } else {
-                                $secondQueryString .= ($secondQueryString ? '&amp;' : '').$k.'='. Input::get($k);
+                                $secondQueryString .= ($secondQueryString ? '&amp;' : '').$k.'='.Input::get($k);
                             }
                         }
                     }
