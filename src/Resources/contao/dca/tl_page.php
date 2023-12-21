@@ -6,6 +6,10 @@
  * 		1. Root-Page als Sprachen-Fallback gekennzeichnet ist
  * 		2. Root-Page hat selbe Domain hinterlegt wie die Root-Page der aktuelle bearbeiteten Seite
  */
+
+use Contao\Backend;
+use Contao\PageModel;
+
 $GLOBALS['TL_DCA']['tl_page']['config']['onload_callback'][] = array('tl_page_ls_cnc_languageSelector','insertSelectorForCorrespondingMainLanguagePage');
 
 $GLOBALS['TL_DCA']['tl_page']['list']['label']['label_callback'] = array('tl_page_ls_cnc_languageSelector', 'showMessageIfNoCorrespondingPageSelected');
@@ -20,7 +24,7 @@ $GLOBALS['TL_DCA']['tl_page']['fields']['ls_cnc_languageSelector_correspondingMa
     'sql'                     => "int(10) unsigned NOT NULL default '0'"
 );
 
-class tl_page_ls_cnc_languageSelector extends \Backend {
+class tl_page_ls_cnc_languageSelector extends Backend {
     public $arrPages = array();
 
     public function insertSelectorForCorrespondingMainLanguagePage($dc) {
@@ -29,7 +33,7 @@ class tl_page_ls_cnc_languageSelector extends \Backend {
              * Im einfachen edit-Modus wird gepr�ft, ob die aktuell bearbeitete Seite Child einer Root-Page ist, die selbst kein Sprachen-Fallback ist.
              * Ist dies der Fall, so wird das Auswahlfeld ausgegeben
              */
-            $objPage = \PageModel::findWithDetails($dc->id);
+            $objPage = PageModel::findWithDetails($dc->id);
 
             if ($objPage->type == 'regular') {
                 $objRootPage = $this->Database->prepare("SELECT * FROM `tl_page` WHERE `id` = ? AND `fallback` != 1")
@@ -60,7 +64,7 @@ class tl_page_ls_cnc_languageSelector extends \Backend {
      */
     public function getCorrespondingMainLanguagePages($dc) {
         $this->arrPages[0] = $GLOBALS['TL_LANG']['tl_page']['noCorrespondingPageSelected'];
-        $objPage = \PageModel::findWithDetails($dc->id);
+        $objPage = PageModel::findWithDetails($dc->id);
 
         $objRootPage = $this->Database->prepare("SELECT * FROM `tl_page` WHERE `id`= ?")
                                         ->limit(1)
@@ -95,12 +99,12 @@ class tl_page_ls_cnc_languageSelector extends \Backend {
     }
 
     public function showMessageIfNoCorrespondingPageSelected($row, $label, $dc, $imageAttribute, $blnReturnImage = false) {
-        $obj_tl_page = new \tl_page();
+        $obj_tl_page = new tl_page();
         $label = $obj_tl_page->addIcon($row, $label, $dc, $imageAttribute, $blnReturnImage);
 
         // Wenn keine korrespondierende Seite ausgewählt ist
         if (!$row['ls_cnc_languageSelector_correspondingMainLanguagePage']) {
-            $objPage = \PageModel::findWithDetails($row['id']);
+            $objPage = PageModel::findWithDetails($row['id']);
 
             // Wenn es sich um eine regular-Seite handelt
             if ($objPage->type == 'regular') {
