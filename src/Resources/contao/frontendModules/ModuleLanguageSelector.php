@@ -2,9 +2,11 @@
 
 namespace LeadingSystems\LanguageSelector;
 
+use Contao\BackendTemplate;
+use Contao\Module;
 use Contao\System;
 
-class ModuleLanguageSelector extends \Module {
+class ModuleLanguageSelector extends Module {
     protected $arrPages = array();
 
     protected $strTemplate = 'mod_ls_cnc_languageSelector_selector';
@@ -15,7 +17,7 @@ class ModuleLanguageSelector extends \Module {
 
         if ($request && System::getContainer()->get('contao.routing.scope_matcher')->isBackendRequest($request))
         {
-            $objTemplate = new \BackendTemplate('be_wildcard');
+            $objTemplate = new BackendTemplate('be_wildcard');
 
             $objTemplate->wildcard = '### LEADING SYSTEMS LANGUAGE SELECTOR ###';
             $objTemplate->title = $this->headline;
