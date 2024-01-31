@@ -28,31 +28,31 @@ class tl_page_ls_cnc_languageSelector extends Backend {
     public $arrPages = array();
 
     public function insertSelectorForCorrespondingMainLanguagePage($dc) {
-        if ($this->Input->get('act') == "edit") {
-            /*
-             * Im einfachen edit-Modus wird gepr�ft, ob die aktuell bearbeitete Seite Child einer Root-Page ist, die selbst kein Sprachen-Fallback ist.
-             * Ist dies der Fall, so wird das Auswahlfeld ausgegeben
-             */
-            $objPage = PageModel::findWithDetails($dc->id);
-
-            if ($objPage->type == 'regular') {
-                $objRootPage = $this->Database->prepare("SELECT * FROM `tl_page` WHERE `id` = ? AND `fallback` != 1")
-                                                ->limit(1)
-                                                ->execute($objPage->rootId);
-                if($objRootPage->numRows) {
-                    $GLOBALS['TL_DCA']['tl_page']['fields']['title']['eval']['tl_class'] = 'w50';
-                    $GLOBALS['TL_DCA']['tl_page']['fields']['alias']['eval']['tl_class'] = 'clr w50';
-                    $GLOBALS['TL_DCA']['tl_page']['palettes']['regular'] = preg_replace('@([,|;]title)([,|;])@','$1,ls_cnc_languageSelector_correspondingMainLanguagePage$2', $GLOBALS['TL_DCA']['tl_page']['palettes']['regular']);
-                }
-            }
-        } else if($this->Input->get('act') == "editAll") {
-            /*
-             * Im editAll-Modus wird das Auswahlfeld auf jeden Fall ausgegeben
-             */
-            $GLOBALS['TL_DCA']['tl_page']['fields']['title']['eval']['tl_class'] = 'w50';
-            $GLOBALS['TL_DCA']['tl_page']['fields']['alias']['eval']['tl_class'] = 'clr w50';
-            $GLOBALS['TL_DCA']['tl_page']['palettes']['regular'] = preg_replace('@([,|;]title)([,|;])@','$1,ls_cnc_languageSelector_correspondingMainLanguagePage$2', $GLOBALS['TL_DCA']['tl_page']['palettes']['regular']);
-        }
+//        if ($this->Input->get('act') == "edit") {
+//            /*
+//             * Im einfachen edit-Modus wird gepr�ft, ob die aktuell bearbeitete Seite Child einer Root-Page ist, die selbst kein Sprachen-Fallback ist.
+//             * Ist dies der Fall, so wird das Auswahlfeld ausgegeben
+//             */
+//            $objPage = PageModel::findWithDetails($dc->id);
+//
+//            if ($objPage->type == 'regular') {
+//                $objRootPage = $this->Database->prepare("SELECT * FROM `tl_page` WHERE `id` = ? AND `fallback` != 1")
+//                                                ->limit(1)
+//                                                ->execute($objPage->rootId);
+//                if($objRootPage->numRows) {
+//                    $GLOBALS['TL_DCA']['tl_page']['fields']['title']['eval']['tl_class'] = 'w50';
+//                    $GLOBALS['TL_DCA']['tl_page']['fields']['alias']['eval']['tl_class'] = 'clr w50';
+//                    $GLOBALS['TL_DCA']['tl_page']['palettes']['regular'] = preg_replace('@([,|;]title)([,|;])@','$1,ls_cnc_languageSelector_correspondingMainLanguagePage$2', $GLOBALS['TL_DCA']['tl_page']['palettes']['regular']);
+//                }
+//            }
+//        } else if($this->Input->get('act') == "editAll") {
+//            /*
+//             * Im editAll-Modus wird das Auswahlfeld auf jeden Fall ausgegeben
+//             */
+//            $GLOBALS['TL_DCA']['tl_page']['fields']['title']['eval']['tl_class'] = 'w50';
+//            $GLOBALS['TL_DCA']['tl_page']['fields']['alias']['eval']['tl_class'] = 'clr w50';
+//            $GLOBALS['TL_DCA']['tl_page']['palettes']['regular'] = preg_replace('@([,|;]title)([,|;])@','$1,ls_cnc_languageSelector_correspondingMainLanguagePage$2', $GLOBALS['TL_DCA']['tl_page']['palettes']['regular']);
+//        }
     }
 
     /*
