@@ -53,7 +53,7 @@ class LsController {
 
             if (!isset($GLOBALS['merconis-languageselector_globals']['cache_language_files'][$objRootPagesWithSameDomain->language])) {
                 System::loadLanguageFile('languages', $objRootPagesWithSameDomain->language, true);
-                $GLOBALS['merconis-languageselector_globals']['cache_language_files'][$objRootPagesWithSameDomain->language] = $GLOBALS['TL_LANG']['LNG'];
+                $GLOBALS['merconis-languageselector_globals']['cache_language_files'][$objRootPagesWithSameDomain->language] = '';
                 /*
                  * Just for safety, load the languages array in the current page language
                  */
@@ -65,7 +65,7 @@ class LsController {
 					'alias' => $objPage->language != $objRootPagesWithSameDomain->language ? $objRootPagesWithSameDomain->alias : $objPage->alias,
 					'id' => $objPage->language != $objRootPagesWithSameDomain->language ? $objRootPagesWithSameDomain->id : $objPage->id,
 					'href' => $obj_pageModel->current()->getFrontendUrl(),
-					'languageTitle' => $GLOBALS['merconis-languageselector_globals']['cache_language_files'][$objRootPagesWithSameDomain->language][$objRootPagesWithSameDomain->language]
+					'languageTitle' => ''
 				);
 			}
 		}
