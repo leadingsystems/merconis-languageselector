@@ -2,12 +2,18 @@
 
 namespace LeadingSystems\LanguageSelector;
 
+use Contao\Database;
+use Contao\Environment;
+use Contao\Input;
+use Contao\PageModel;
+use Contao\System;
+
 class LsController {
 	public function getCorrespondingLanguagesForCurrentRootPage($pageID = false) {
 		if (!$pageID) {
 			global $objPage;
 		} else {
-			$objPage = \PageModel::findWithDetails($pageID);
+			$objPage = PageModel::findWithDetails($pageID);
 		}
 
 
@@ -15,7 +21,7 @@ class LsController {
 		 * Ermitteln der Domain der aktuellen Root-Page
 		 */
 		if ($objPage->rootId) {
-			$objRootPage = \Database::getInstance()->prepare("SELECT * FROM `tl_page` WHERE `id` = ?")
+			$objRootPage = Database::getInstance()->prepare("SELECT * FROM `tl_page` WHERE `id` = ?")
 											->limit(1)
 											->execute($objPage->rootId);
 		} else {
@@ -27,7 +33,7 @@ class LsController {
 		/*
 		 * Ermitteln aller Root-Pages mit derselben Domain
 		 */
-		$objRootPagesWithSameDomain = \Database::getInstance()->prepare("SELECT * FROM `tl_page` WHERE `type` = 'root' AND `dns` = ? AND `published` = 1 ORDER BY `sorting`")
+		$objRootPagesWithSameDomain = Database::getInstance()->prepare("SELECT * FROM `tl_page` WHERE `type` = 'root' AND `dns` = ? AND `published` = 1 ORDER BY `sorting`")
 														->execute($currentDomain);
 
 		/*
@@ -43,15 +49,15 @@ class LsController {
 		     * Load the languages array in every language so that we can show each language name in that language
 		     */
 
-            $obj_pageModel = \PageModel::findByAlias($objPage->type !== 'regular' || $objPage->language != $objRootPagesWithSameDomain->language ? $objRootPagesWithSameDomain->row()['alias'] : $objPage->row()['alias']);
+            $obj_pageModel = PageModel::findByAlias($objPage->type !== 'regular' || $objPage->language != $objRootPagesWithSameDomain->language ? $objRootPagesWithSameDomain->row()['alias'] : $objPage->row()['alias']);
 
             if (!isset($GLOBALS['merconis-languageselector_globals']['cache_language_files'][$objRootPagesWithSameDomain->language])) {
-                \System::loadLanguageFile('languages', $objRootPagesWithSameDomain->language, true);
+                System::loadLanguageFile('languages', $objRootPagesWithSameDomain->language, true);
                 $GLOBALS['merconis-languageselector_globals']['cache_language_files'][$objRootPagesWithSameDomain->language] = $GLOBALS['TL_LANG']['LNG'];
                 /*
                  * Just for safety, load the languages array in the current page language
                  */
-                \System::loadLanguageFile('languages', $objPage->language, true);
+                System::loadLanguageFile('languages', $objPage->language, true);
             }
 
 			if (!in_array($objRootPagesWithSameDomain->language, $languagesForCurrentDomain)) {
@@ -74,14 +80,14 @@ class LsController {
 			/*
 			 * Ermitteln aller Seiten, denen die entsprechende Hauptsprach-Seiten-ID als korrespondierende Seite hinterlegt ist.
 			 */
-			$objCorrespondingPages = \Database::getInstance()->prepare("SELECT * FROM `tl_page` WHERE (`ls_cnc_languageSelector_correspondingMainLanguagePage` = ? OR `id` = ?) AND `published` = 1")
+			$objCorrespondingPages = Database::getInstance()->prepare("SELECT * FROM `tl_page` WHERE (`ls_cnc_languageSelector_correspondingMainLanguagePage` = ? OR `id` = ?) AND `published` = 1")
 													->execute($mainLanguageID, $mainLanguageID);
 
 			/*
 			 * Hinterlegen der Sprach-Seiten in das Sprach-Array
 			 */
 			while ($objCorrespondingPages->next()) {
-				$pageDetails = \PageModel::findWithDetails($objCorrespondingPages->id);
+				$pageDetails = PageModel::findWithDetails($objCorrespondingPages->id);
 				if ($pageDetails->domain != $currentDomain) {
 					continue;
 				}
@@ -109,21 +115,21 @@ class LsController {
 								continue;
 							}
 
-							if (!preg_match('/'.preg_quote($k, '/').'=/', \Environment::get('request'))) {
-								$queryString .= '/'.$k.'/'.\Input::get($k);
+							if (!preg_match('/'.preg_quote($k, '/').'=/', Environment::get('request'))) {
+								$queryString .= '/'.$k.'/'.Input::get($k);
 							} else {
-								$secondQueryString .= ($secondQueryString ? '&amp;' : '').$k.'='.\Input::get($k);
+								$secondQueryString .= ($secondQueryString ? '&amp;' : '').$k.'='.Input::get($k);
 							}
 						}
 					}
 
-                    if(\Input::get('auto_item')) {
-                        $obj_targetPageCollection = \PageModel::findByAlias($pageDetails->parentAlias);
+                    if(Input::get('auto_item')) {
+                        $obj_targetPageCollection = PageModel::findByAlias($pageDetails->parentAlias);
                         if ($obj_targetPageCollection->current()->type === 'regular') {
                             $languagesForCurrentDomain[$pageDetails->language]['href'] = $obj_targetPageCollection->current()->getFrontendUrl();
                         }
                     } else {
-                        $obj_targetPageCollection = \PageModel::findByAlias($objCorrespondingPages->row()['alias']);
+                        $obj_targetPageCollection = PageModel::findByAlias($objCorrespondingPages->row()['alias']);
                         if ($obj_targetPageCollection->current()->type === 'regular') {
                             $languagesForCurrentDomain[$pageDetails->language]['href'] = $obj_targetPageCollection->current()->getFrontendUrl($queryString) . ($secondQueryString ? '?' . $secondQueryString : '');
                         }
@@ -134,7 +140,7 @@ class LsController {
 
 		if (isset($GLOBALS['LS_LANGUAGESELECTOR_HOOKS']['modifyLanguageLinks']) && is_array($GLOBALS['LS_LANGUAGESELECTOR_HOOKS']['modifyLanguageLinks'])) {
 			foreach ($GLOBALS['LS_LANGUAGESELECTOR_HOOKS']['modifyLanguageLinks'] as $mccb) {
-				$objMccb = \System::importStatic($mccb[0]);
+				$objMccb = System::importStatic($mccb[0]);
 				$languagesForCurrentDomain = $objMccb->{$mccb[1]}($languagesForCurrentDomain, $objPage->language);
 			}
 		}
@@ -152,8 +158,8 @@ class LsController {
 			return $mainLanguagePageID;
 		}
 
-		$objPageDetails = \PageModel::findWithDetails($pageID);
-		$objRootPage = \Database::getInstance()->prepare("SELECT * FROM `tl_page` WHERE `id` = ?")
+		$objPageDetails = PageModel::findWithDetails($pageID);
+		$objRootPage = Database::getInstance()->prepare("SELECT * FROM `tl_page` WHERE `id` = ?")
 							->limit(1)
 							->execute($objPageDetails->rootId);
 
@@ -164,7 +170,7 @@ class LsController {
 		if ($objRootPage->fallback) {
 			$mainLanguagePageID = $pageID;
 		} else {
-			$obj_correspondingMainLanguagePageDetails = \PageModel::findWithDetails($objPageDetails->ls_cnc_languageSelector_correspondingMainLanguagePage);
+			$obj_correspondingMainLanguagePageDetails = PageModel::findWithDetails($objPageDetails->ls_cnc_languageSelector_correspondingMainLanguagePage);
 			if ($obj_correspondingMainLanguagePageDetails->domain == $objPageDetails->domain) {
 				$mainLanguagePageID = $objPageDetails->ls_cnc_languageSelector_correspondingMainLanguagePage;
 			}
