@@ -83,7 +83,7 @@ class tl_page_ls_cnc_languageSelector extends Backend {
     }
 
     protected function createPageOptionsArray ($intId = 0, $level = -1) {
-        $objPages = $this->Database->prepare("SELECT `id`, `title` FROM `tl_page` WHERE `pid` = ? AND (`type`  = 'regular' OR `type` = 'redirect' OR `type` = 'forward') ORDER BY sorting")
+        $objPages = $this->Database->prepare("SELECT `id`, `title` FROM `tl_page` WHERE `pid` = ? AND (`type`  = 'regular' OR `type` = 'redirect' OR `type` = 'forward' OR `type` = 'logout') ORDER BY sorting")
                                    ->execute($intId);
 
         if ($objPages->numRows < 1) {
