@@ -124,7 +124,7 @@ class LsController {
 					}
 
                     if(Input::get('auto_item')) {
-                        $obj_targetPageCollection = PageModel::findByAlias($pageDetails->parentAlias);
+                        $obj_targetPageCollection = PageModel::findbyId($pageDetails->pid);
                         if ($obj_targetPageCollection->current()->type === 'regular') {
                             $languagesForCurrentDomain[$pageDetails->language]['href'] = $obj_targetPageCollection->current()->getFrontendUrl();
                         }
