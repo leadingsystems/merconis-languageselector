@@ -124,12 +124,12 @@ class LsController {
 					}
 
                     if(Input::get('auto_item')) {
-                        $obj_targetPageCollection = PageModel::findbyId($pageDetails->pid);
+                        $obj_targetPageCollection = PageModel::findById($pageDetails->pid);
                         if ($obj_targetPageCollection->current()->type === 'regular') {
                             $languagesForCurrentDomain[$pageDetails->language]['href'] = $obj_targetPageCollection->current()->getFrontendUrl();
                         }
                     } else {
-                        $obj_targetPageCollection = PageModel::findbyId($objCorrespondingPages->row()['id']);
+                        $obj_targetPageCollection = PageModel::findById($objCorrespondingPages->row()['id']);
                         if ($obj_targetPageCollection->current()->type === 'regular') {
                             $languagesForCurrentDomain[$pageDetails->language]['href'] = $obj_targetPageCollection->current()->getFrontendUrl($queryString) . ($secondQueryString ? '?' . $secondQueryString : '');
                         }
