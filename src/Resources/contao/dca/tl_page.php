@@ -8,6 +8,7 @@
  */
 
 use Contao\Backend;
+use Contao\Input;
 use Contao\PageModel;
 
 $GLOBALS['TL_DCA']['tl_page']['config']['onload_callback'][] = array('tl_page_ls_cnc_languageSelector','insertSelectorForCorrespondingMainLanguagePage');
@@ -28,7 +29,7 @@ class tl_page_ls_cnc_languageSelector extends Backend {
     public $arrPages = array();
 
     public function insertSelectorForCorrespondingMainLanguagePage($dc) {
-        if ($this->Input->get('act') == "edit") {
+        if (Input::get('act') == "edit") {
             /*
              * Im einfachen edit-Modus wird gepr�ft, ob die aktuell bearbeitete Seite Child einer Root-Page ist, die selbst kein Sprachen-Fallback ist.
              * Ist dies der Fall, so wird das Auswahlfeld ausgegeben
@@ -45,7 +46,7 @@ class tl_page_ls_cnc_languageSelector extends Backend {
                     $GLOBALS['TL_DCA']['tl_page']['palettes']['regular'] = preg_replace('@([,|;]title)([,|;])@','$1,ls_cnc_languageSelector_correspondingMainLanguagePage$2', $GLOBALS['TL_DCA']['tl_page']['palettes']['regular']);
                 }
             }
-        } else if($this->Input->get('act') == "editAll") {
+        } else if(Input::get('act') == "editAll") {
             /*
              * Im editAll-Modus wird das Auswahlfeld auf jeden Fall ausgegeben
              */
@@ -82,7 +83,7 @@ class tl_page_ls_cnc_languageSelector extends Backend {
     }
 
     protected function createPageOptionsArray ($intId = 0, $level = -1) {
-        $objPages = $this->Database->prepare("SELECT `id`, `title` FROM `tl_page` WHERE `pid` = ? AND (`type`  = 'regular' OR `type` = 'redirect' OR `type` = 'forward') ORDER BY sorting")
+        $objPages = $this->Database->prepare("SELECT `id`, `title` FROM `tl_page` WHERE `pid` = ? AND (`type`  = 'regular' OR `type` = 'redirect' OR `type` = 'forward' OR `type` = 'logout') ORDER BY sorting")
                                    ->execute($intId);
 
         if ($objPages->numRows < 1) {
