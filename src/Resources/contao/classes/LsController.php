@@ -10,13 +10,13 @@ use Contao\System;
 
 class LsController {
 
-    private static array $cache = [];
-    private static array $cache2 = [];
+    private static array $cache_getCorrespondingLanguagesForCurrentRootPage = [];
+    private static array $cache_getMainlanguagePageIDForPageID = [];
 
 	public function getCorrespondingLanguagesForCurrentRootPage($pageID = false) {
 
-        if (array_key_exists($pageID, self::$cache)) {
-            return self::$cache[$pageID];
+        if (array_key_exists($pageID, self::$cache_getCorrespondingLanguagesForCurrentRootPage)) {
+            return self::$cache_getCorrespondingLanguagesForCurrentRootPage[$pageID];
         }
 
 		if (!$pageID) {
@@ -149,7 +149,7 @@ class LsController {
 			}
 		}
 
-        self::$cache[$pageID] = $languagesForCurrentDomain;
+        self::$cache_getCorrespondingLanguagesForCurrentRootPage[$pageID] = $languagesForCurrentDomain;
 		return $languagesForCurrentDomain;
 	}
 
@@ -163,8 +163,8 @@ class LsController {
 			return $mainLanguagePageID;
 		}
 
-        if (array_key_exists($pageID, self::$cache2)) {
-            return self::$cache2[$pageID];
+        if (array_key_exists($pageID, self::$cache_getMainlanguagePageIDForPageID)) {
+            return self::$cache_getMainlanguagePageIDForPageID[$pageID];
         }
 
 		$objPageDetails = PageModel::findWithDetails($pageID);
@@ -185,7 +185,7 @@ class LsController {
 			}
 		}
 
-        self::$cache2[$pageID] = $mainLanguagePageID;
+        self::$cache_getMainlanguagePageIDForPageID[$pageID] = $mainLanguagePageID;
 
 		return $mainLanguagePageID;
 	}
