@@ -35,6 +35,7 @@ class LsController {
 		} else {
 			$objRootPage = $objPage;
 		}
+
 		$currentDomain = $objRootPage->dns;
 
 		/*
@@ -42,6 +43,7 @@ class LsController {
 		 */
 		$objRootPagesWithSameDomain = Database::getInstance()->prepare("SELECT * FROM `tl_page` WHERE `type` = 'root' AND `dns` = ? AND `published` = 1 ORDER BY `sorting`")
 														->execute($currentDomain);
+
 		/*
 		 * Ermitteln aller Root-Page-Sprachen f�r die aktuelle Domain.
 		 * Dem Sprach-Array werden die zu den jeweiligen Sprachen passenden Verlinkungen hinterlegt. Beim Erstellen des Arrays
@@ -81,12 +83,14 @@ class LsController {
 		 * die eigene ID.
 		 */
 		$mainLanguageID = $objRootPage->fallback ? $objPage->id : $objPage->ls_cnc_languageSelector_correspondingMainLanguagePage;
+
 		if ($mainLanguageID) {
 			/*
 			 * Ermitteln aller Seiten, denen die entsprechende Hauptsprach-Seiten-ID als korrespondierende Seite hinterlegt ist.
 			 */
 			$objCorrespondingPages = Database::getInstance()->prepare("SELECT * FROM `tl_page` WHERE (`ls_cnc_languageSelector_correspondingMainLanguagePage` = ? OR `id` = ?) AND `published` = 1")
 													->execute($mainLanguageID, $mainLanguageID);
+
 			/*
 			 * Hinterlegen der Sprach-Seiten in das Sprach-Array
 			 */
