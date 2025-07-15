@@ -186,7 +186,6 @@ class LsController {
 		}
 
         self::$cache_getMainlanguagePageIDForPageID[$pageID] = $mainLanguagePageID;
-
 		return $mainLanguagePageID;
 	}
 }
