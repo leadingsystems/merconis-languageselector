@@ -9,13 +9,21 @@ use Contao\PageModel;
 use Contao\System;
 
 class LsController {
+
+    private static array $cache_getCorrespondingLanguagesForCurrentRootPage = [];
+    private static array $cache_getMainlanguagePageIDForPageID = [];
+
 	public function getCorrespondingLanguagesForCurrentRootPage($pageID = false) {
+
+        if (array_key_exists($pageID, self::$cache_getCorrespondingLanguagesForCurrentRootPage)) {
+            return self::$cache_getCorrespondingLanguagesForCurrentRootPage[$pageID];
+        }
+
 		if (!$pageID) {
 			global $objPage;
 		} else {
 			$objPage = PageModel::findWithDetails($pageID);
 		}
-
 
 		/*
 		 * Ermitteln der Domain der aktuellen Root-Page
@@ -145,6 +153,7 @@ class LsController {
 			}
 		}
 
+        self::$cache_getCorrespondingLanguagesForCurrentRootPage[$pageID] = $languagesForCurrentDomain;
 		return $languagesForCurrentDomain;
 	}
 
@@ -157,6 +166,10 @@ class LsController {
 		if (!$pageID) {
 			return $mainLanguagePageID;
 		}
+
+        if (array_key_exists($pageID, self::$cache_getMainlanguagePageIDForPageID)) {
+            return self::$cache_getMainlanguagePageIDForPageID[$pageID];
+        }
 
 		$objPageDetails = PageModel::findWithDetails($pageID);
 		$objRootPage = Database::getInstance()->prepare("SELECT * FROM `tl_page` WHERE `id` = ?")
@@ -176,6 +189,7 @@ class LsController {
 			}
 		}
 
+        self::$cache_getMainlanguagePageIDForPageID[$pageID] = $mainLanguagePageID;
 		return $mainLanguagePageID;
 	}
 }
