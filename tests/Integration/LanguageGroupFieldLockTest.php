@@ -27,6 +27,7 @@ class LanguageGroupFieldLockTest extends TestCase
                 ],
                 'palettes' => [
                     'root' => '{title_legend},title;{dns_legend},dns;{language_legend},language,fallback;',
+                    'rootfallback' => '{title_legend},title;{dns_legend},dns;{language_legend},language,fallback;',
                 ],
             ],
         ];
@@ -133,7 +134,7 @@ class LanguageGroupFieldLockTest extends TestCase
 
         $this->assertStringContainsString(
             'ls_cnc_languageSelector_languageGroup',
-            $GLOBALS['TL_DCA']['tl_page']['palettes']['root']
+            $GLOBALS['TL_DCA']['tl_page']['palettes']['rootfallback']
         );
     }
 
