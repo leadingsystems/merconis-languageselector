@@ -190,7 +190,101 @@ class LanguageResolutionTest extends TestCase
         $this->assertStringStartsNotWith('http', $result['en']['href']);
     }
 
-    private function setupDatabaseForLanguageGroup(array $rootPages, object $currentPage): void
+    /**
+     * Korrespondierende Seiten in anderer Domain verwenden absolute URLs.
+     */
+    public function testCorrespondingCrossDomainPagesUseAbsoluteUrls(): void
+    {
+        $rootPages = [
+            1 => ['id' => 1, 'type' => 'root', 'language' => 'de', 'dns' => 'shop.de', 'published' => 1, 'sorting' => 10, 'alias' => 'de-root', 'fallback' => 1, 'ls_cnc_languageSelector_languageGroup' => 0, 'rootUseSSL' => true, 'rootId' => 1],
+            2 => ['id' => 2, 'type' => 'root', 'language' => 'en', 'dns' => 'shop.com', 'published' => 1, 'sorting' => 20, 'alias' => 'en-root', 'fallback' => 1, 'ls_cnc_languageSelector_languageGroup' => 1, 'rootUseSSL' => true, 'rootId' => 2],
+        ];
+
+        $currentPage = (object) [
+            'id' => 10, 'rootId' => 1, 'language' => 'de', 'type' => 'regular',
+            'alias' => 'produkte', 'domain' => 'shop.de', 'pid' => 110, 'ls_cnc_languageSelector_correspondingMainLanguagePage' => 0,
+        ];
+
+        $pages = [
+            10 => ['id' => 10, 'rootId' => 1, 'language' => 'de', 'type' => 'regular', 'alias' => 'produkte', 'domain' => 'shop.de', 'published' => 1, 'ls_cnc_languageSelector_correspondingMainLanguagePage' => 0],
+            20 => ['id' => 20, 'rootId' => 2, 'language' => 'en', 'type' => 'regular', 'alias' => 'products', 'domain' => 'shop.com', 'published' => 1, 'ls_cnc_languageSelector_correspondingMainLanguagePage' => 10],
+        ];
+
+        $this->setupDatabaseForLanguageGroup($rootPages, $currentPage, $pages);
+        $this->setupPageModels($rootPages, $currentPage, $pages);
+
+        $GLOBALS['objPage'] = $currentPage;
+
+        $result = $this->controller->getCorrespondingLanguagesForCurrentRootPage();
+
+        $this->assertSame('https://shop.com/products', $result['en']['href']);
+    }
+
+    /**
+     * Korrespondierende Seiten in derselben Domain bleiben relativ.
+     */
+    public function testCorrespondingSameDomainPagesStayRelative(): void
+    {
+        $rootPages = [
+            1 => ['id' => 1, 'type' => 'root', 'language' => 'de', 'dns' => 'example.com', 'published' => 1, 'sorting' => 10, 'alias' => 'de-root', 'fallback' => 1, 'ls_cnc_languageSelector_languageGroup' => 0, 'rootUseSSL' => true, 'rootId' => 1],
+            2 => ['id' => 2, 'type' => 'root', 'language' => 'en', 'dns' => 'example.com', 'published' => 1, 'sorting' => 20, 'alias' => 'en-root', 'fallback' => 0, 'ls_cnc_languageSelector_languageGroup' => 0, 'rootUseSSL' => true, 'rootId' => 2],
+        ];
+
+        $currentPage = (object) [
+            'id' => 10, 'rootId' => 1, 'language' => 'de', 'type' => 'regular',
+            'alias' => 'produkte', 'domain' => 'example.com', 'ls_cnc_languageSelector_correspondingMainLanguagePage' => 0,
+        ];
+
+        $pages = [
+            10 => ['id' => 10, 'rootId' => 1, 'language' => 'de', 'type' => 'regular', 'alias' => 'produkte', 'domain' => 'example.com', 'published' => 1, 'ls_cnc_languageSelector_correspondingMainLanguagePage' => 0],
+            20 => ['id' => 20, 'rootId' => 2, 'language' => 'en', 'type' => 'regular', 'alias' => 'products', 'domain' => 'example.com', 'published' => 1, 'ls_cnc_languageSelector_correspondingMainLanguagePage' => 10],
+        ];
+
+        $this->setupDatabaseForDomainEquality($rootPages, $currentPage, 'example.com', $pages);
+        $this->setupPageModels($rootPages, $currentPage, $pages);
+
+        $GLOBALS['objPage'] = $currentPage;
+
+        $result = $this->controller->getCorrespondingLanguagesForCurrentRootPage();
+
+        $this->assertSame('/products', $result['en']['href']);
+    }
+
+    /**
+     * `auto_item` nutzt bei Domainwechsel die Elternseite als absolute URL.
+     */
+    public function testAutoItemCrossDomainUsesAbsoluteParentUrl(): void
+    {
+        $rootPages = [
+            1 => ['id' => 1, 'type' => 'root', 'language' => 'de', 'dns' => 'shop.de', 'published' => 1, 'sorting' => 10, 'alias' => 'de-root', 'fallback' => 1, 'ls_cnc_languageSelector_languageGroup' => 0, 'rootUseSSL' => true, 'rootId' => 1],
+            2 => ['id' => 2, 'type' => 'root', 'language' => 'en', 'dns' => 'shop.com', 'published' => 1, 'sorting' => 20, 'alias' => 'en-root', 'fallback' => 1, 'ls_cnc_languageSelector_languageGroup' => 1, 'rootUseSSL' => true, 'rootId' => 2],
+        ];
+
+        $currentPage = (object) [
+            'id' => 10, 'rootId' => 1, 'language' => 'de', 'type' => 'regular',
+            'alias' => 'produkte', 'domain' => 'shop.de', 'pid' => 110, 'ls_cnc_languageSelector_correspondingMainLanguagePage' => 0,
+        ];
+
+        $pages = [
+            10 => ['id' => 10, 'rootId' => 1, 'language' => 'de', 'type' => 'regular', 'alias' => 'produkte', 'domain' => 'shop.de', 'published' => 1, 'pid' => 110, 'ls_cnc_languageSelector_correspondingMainLanguagePage' => 0],
+            20 => ['id' => 20, 'rootId' => 2, 'language' => 'en', 'type' => 'regular', 'alias' => 'products', 'domain' => 'shop.com', 'published' => 1, 'pid' => 120, 'ls_cnc_languageSelector_correspondingMainLanguagePage' => 10],
+            110 => ['id' => 110, 'rootId' => 1, 'language' => 'de', 'type' => 'regular', 'alias' => 'katalog', 'domain' => 'shop.de', 'published' => 1, 'ls_cnc_languageSelector_correspondingMainLanguagePage' => 0],
+            120 => ['id' => 120, 'rootId' => 2, 'language' => 'en', 'type' => 'regular', 'alias' => 'catalog', 'domain' => 'shop.com', 'published' => 1, 'ls_cnc_languageSelector_correspondingMainLanguagePage' => 0],
+        ];
+
+        $_GET['auto_item'] = 'produkt-a';
+
+        $this->setupDatabaseForLanguageGroup($rootPages, $currentPage, $pages);
+        $this->setupPageModels($rootPages, $currentPage, $pages);
+
+        $GLOBALS['objPage'] = $currentPage;
+
+        $result = $this->controller->getCorrespondingLanguagesForCurrentRootPage();
+
+        $this->assertSame('https://shop.com/catalog', $result['en']['href']);
+    }
+
+    private function setupDatabaseForLanguageGroup(array $rootPages, object $currentPage, array $pages = []): void
     {
         $currentRootId = $currentPage->rootId;
         $currentRoot = $rootPages[$currentRootId];
@@ -217,21 +311,23 @@ class LanguageResolutionTest extends TestCase
         usort($groupMembers, fn($a, $b) => $a['sorting'] <=> $b['sorting']);
 
         $callIndex = 0;
-        Database::$prepareCallback = function (string $query) use (&$callIndex, $rootPages, $currentRootId, $masterRootId, $groupMembers) {
+        Database::$prepareCallback = function (string $query) use (&$callIndex, $rootPages, $currentRootId, $masterRootId, $groupMembers, $pages) {
             $callIndex++;
-            return new class($query, $rootPages, $currentRootId, $masterRootId, $groupMembers) {
+            return new class($query, $rootPages, $currentRootId, $masterRootId, $groupMembers, $pages) {
                 private string $query;
                 private array $rootPages;
                 private int $currentRootId;
                 private int $masterRootId;
                 private array $groupMembers;
+                private array $pages;
 
-                public function __construct($query, $rootPages, $currentRootId, $masterRootId, $groupMembers) {
+                public function __construct($query, $rootPages, $currentRootId, $masterRootId, $groupMembers, $pages) {
                     $this->query = $query;
                     $this->rootPages = $rootPages;
                     $this->currentRootId = $currentRootId;
                     $this->masterRootId = $masterRootId;
                     $this->groupMembers = $groupMembers;
+                    $this->pages = $pages;
                 }
 
                 public function limit($l) { return $this; }
@@ -260,7 +356,17 @@ class LanguageResolutionTest extends TestCase
                     }
 
                     if (str_contains($this->query, 'correspondingMainLanguagePage')) {
-                        return new MockDbResult([]);
+                        $mainLanguageId = $params[0] ?? 0;
+                        $matchingPages = array_values(array_filter(
+                            $this->pages,
+                            static fn(array $page): bool => ((int) ($page['published'] ?? 1) === 1)
+                                && (
+                                    (int) ($page['ls_cnc_languageSelector_correspondingMainLanguagePage'] ?? 0) === (int) $mainLanguageId
+                                    || (int) $page['id'] === (int) $mainLanguageId
+                                )
+                        ));
+
+                        return new MockDbResult($matchingPages);
                     }
 
                     if (str_contains($this->query, 'ls_cnc_languageSelector_languageGroup FROM')) {
@@ -280,7 +386,7 @@ class LanguageResolutionTest extends TestCase
         Database::setTestInstance($db);
     }
 
-    private function setupDatabaseForDomainEquality(array $rootPages, object $currentPage, string $domain): void
+    private function setupDatabaseForDomainEquality(array $rootPages, object $currentPage, string $domain, array $pages = []): void
     {
         $currentRootId = $currentPage->rootId;
 
@@ -292,18 +398,20 @@ class LanguageResolutionTest extends TestCase
         }
         usort($sameDomainRoots, fn($a, $b) => $a['sorting'] <=> $b['sorting']);
 
-        Database::$prepareCallback = function (string $query) use ($rootPages, $currentRootId, $sameDomainRoots) {
-            return new class($query, $rootPages, $currentRootId, $sameDomainRoots) {
+        Database::$prepareCallback = function (string $query) use ($rootPages, $currentRootId, $sameDomainRoots, $pages) {
+            return new class($query, $rootPages, $currentRootId, $sameDomainRoots, $pages) {
                 private string $query;
                 private array $rootPages;
                 private int $currentRootId;
                 private array $sameDomainRoots;
+                private array $pages;
 
-                public function __construct($query, $rootPages, $currentRootId, $sameDomainRoots) {
+                public function __construct($query, $rootPages, $currentRootId, $sameDomainRoots, $pages) {
                     $this->query = $query;
                     $this->rootPages = $rootPages;
                     $this->currentRootId = $currentRootId;
                     $this->sameDomainRoots = $sameDomainRoots;
+                    $this->pages = $pages;
                 }
 
                 public function limit($l) { return $this; }
@@ -326,7 +434,17 @@ class LanguageResolutionTest extends TestCase
                     }
 
                     if (str_contains($this->query, 'correspondingMainLanguagePage')) {
-                        return new MockDbResult([]);
+                        $mainLanguageId = $params[0] ?? 0;
+                        $matchingPages = array_values(array_filter(
+                            $this->pages,
+                            static fn(array $page): bool => ((int) ($page['published'] ?? 1) === 1)
+                                && (
+                                    (int) ($page['ls_cnc_languageSelector_correspondingMainLanguagePage'] ?? 0) === (int) $mainLanguageId
+                                    || (int) $page['id'] === (int) $mainLanguageId
+                                )
+                        ));
+
+                        return new MockDbResult($matchingPages);
                     }
 
                     return new MockDbResult([]);
@@ -338,11 +456,14 @@ class LanguageResolutionTest extends TestCase
         Database::setTestInstance($db);
     }
 
-    private function setupPageModels(array $rootPages, object $currentPage): void
+    private function setupPageModels(array $rootPages, object $currentPage, array $pages = []): void
     {
-        PageModel::$testCallback = function ($id) use ($rootPages, $currentPage) {
+        PageModel::$testCallback = function ($id) use ($rootPages, $currentPage, $pages) {
             if ($id == $currentPage->id) {
                 return $currentPage;
+            }
+            if (isset($pages[$id])) {
+                return (object) $pages[$id];
             }
             if (isset($rootPages[$id])) {
                 return (object) $rootPages[$id];
@@ -350,22 +471,82 @@ class LanguageResolutionTest extends TestCase
             return (object) ['id' => $id, 'rootId' => 0, 'language' => '', 'domain' => '', 'type' => 'regular'];
         };
 
-        PageModel::$findByAliasCallback = function ($alias) {
-            return new class($alias) {
-                private string $alias;
-                public function __construct(string $alias) { $this->alias = $alias; }
-                public function current() {
-                    $self = $this;
-                    return new class($self->alias) {
-                        private string $alias;
-                        public function __construct(string $alias) { $this->alias = $alias; }
-                        public function getFrontendUrl(string $suffix = ''): string {
-                            return '/' . $this->alias . $suffix;
-                        }
-                        public string $type = 'regular';
-                    };
+        PageModel::$findByIdCallback = function ($id) use ($rootPages, $pages) {
+            if (isset($pages[$id])) {
+                return $this->buildPageCollection($pages[$id]);
+            }
+
+            if (isset($rootPages[$id])) {
+                return $this->buildPageCollection($rootPages[$id]);
+            }
+
+            return null;
+        };
+
+        PageModel::$findByAliasCallback = function ($alias) use ($rootPages, $currentPage, $pages) {
+            if ($currentPage->alias === $alias) {
+                $currentPageData = (array) $currentPage;
+
+                if (!isset($currentPageData['domain']) && isset($rootPages[$currentPage->rootId]['dns'])) {
+                    $currentPageData['domain'] = $rootPages[$currentPage->rootId]['dns'];
                 }
-            };
+
+                return $this->buildPageCollection($currentPageData);
+            }
+
+            foreach ($pages as $page) {
+                if (($page['alias'] ?? null) === $alias) {
+                    return $this->buildPageCollection($page);
+                }
+            }
+
+            foreach ($rootPages as $rootPage) {
+                if (($rootPage['alias'] ?? null) === $alias) {
+                    return $this->buildPageCollection($rootPage);
+                }
+            }
+
+            return null;
+        };
+    }
+
+    private function buildPageCollection(array $pageData): object
+    {
+        return new class($pageData) {
+            private array $pageData;
+
+            public function __construct(array $pageData)
+            {
+                $this->pageData = $pageData;
+            }
+
+            public function current(): object
+            {
+                $pageData = $this->pageData;
+
+                return new class($pageData) {
+                    public string $type;
+                    private array $pageData;
+
+                    public function __construct(array $pageData)
+                    {
+                        $this->pageData = $pageData;
+                        $this->type = (string) ($pageData['type'] ?? 'regular');
+                    }
+
+                    public function getFrontendUrl(string $suffix = ''): string
+                    {
+                        return '/' . $this->pageData['alias'] . $suffix;
+                    }
+
+                    public function getAbsoluteUrl(string $suffix = ''): string
+                    {
+                        $domain = $this->pageData['dns'] ?? $this->pageData['domain'] ?? 'example.com';
+
+                        return 'https://' . $domain . '/' . $this->pageData['alias'] . $suffix;
+                    }
+                };
+            }
         };
     }
 }

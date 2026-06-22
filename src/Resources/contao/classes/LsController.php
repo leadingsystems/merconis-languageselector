@@ -66,12 +66,15 @@ class LsController {
 		}
 
 		$languagesForCurrentDomain = array();
+		$groupRootDnsByLanguage = [];
 		while ($objGroupRootPages->next()) {
+			$groupRootDnsByLanguage[$objGroupRootPages->language] = $objGroupRootPages->dns;
 
             $targetAlias = ($objPage->type !== 'regular' || $objPage->language != $objGroupRootPages->language)
                 ? $objGroupRootPages->row()['alias']
                 : $objPage->alias;
-            $obj_pageModel = PageModel::findByAlias($targetAlias);
+            $objTargetPageCollection = PageModel::findByAlias($targetAlias);
+            $objTargetPage = $objTargetPageCollection->current();
 
             if (!isset($GLOBALS['merconis-languageselector_globals']['cache_language_files'][$objGroupRootPages->language])) {
                 System::loadLanguageFile('languages', $objGroupRootPages->language, true);
@@ -80,10 +83,10 @@ class LsController {
             }
 
 			if (!in_array($objGroupRootPages->language, $languagesForCurrentDomain)) {
-				$targetHref = $obj_pageModel->current()->getFrontendUrl();
+				$targetHref = $objTargetPage->getFrontendUrl();
 
 				if ($useLanguageGroup && $objGroupRootPages->dns != $currentDomain) {
-					$targetHref = $this->buildAbsoluteUrl($objGroupRootPages, $targetHref);
+					$targetHref = $objTargetPage->getAbsoluteUrl();
 				}
 
 				$languagesForCurrentDomain[$objGroupRootPages->language] = array(
@@ -144,28 +147,32 @@ class LsController {
 					}
 
                     if(Input::get('auto_item')) {
-                        $obj_targetPageCollection = PageModel::findById($pageDetails->pid);
-                        if ($obj_targetPageCollection->current()->type === 'regular') {
-                            $href = $obj_targetPageCollection->current()->getFrontendUrl();
+                        $objTargetPageCollection = PageModel::findById($pageDetails->pid);
+                        $objTargetPage = $objTargetPageCollection->current();
 
-                            $targetRootDns = $this->getRootPageDns($pageDetails->rootId);
+                        if ($objTargetPage->type === 'regular') {
+                            $href = $objTargetPage->getFrontendUrl();
+                            $targetRootDns = $groupRootDnsByLanguage[$pageDetails->language] ?? null;
+
                             if ($targetRootDns && $targetRootDns != $currentDomain) {
-                                $href = $this->buildAbsoluteUrlFromRootId($pageDetails->rootId, $href);
+                                $href = $objTargetPage->getAbsoluteUrl();
                             }
 
                             $languagesForCurrentDomain[$pageDetails->language]['href'] = $href;
                         }
                     } else {
-                        $obj_targetPageCollection = PageModel::findById($objCorrespondingPages->row()['id']);
-                        if ($obj_targetPageCollection->current()->type === 'regular') {
-                            $href = $obj_targetPageCollection->current()->getFrontendUrl($queryString) . ($secondQueryString ? '?' . $secondQueryString : '');
+                        $objTargetPageCollection = PageModel::findById($objCorrespondingPages->row()['id']);
+                        $objTargetPage = $objTargetPageCollection->current();
 
-                            $targetRootDns = $this->getRootPageDns($pageDetails->rootId);
+                        if ($objTargetPage->type === 'regular') {
+                            $href = $objTargetPage->getFrontendUrl($queryString);
+                            $targetRootDns = $groupRootDnsByLanguage[$pageDetails->language] ?? null;
+
                             if ($targetRootDns && $targetRootDns != $currentDomain) {
-                                $href = $this->buildAbsoluteUrlFromRootId($pageDetails->rootId, $href);
+                                $href = $objTargetPage->getAbsoluteUrl($queryString);
                             }
 
-                            $languagesForCurrentDomain[$pageDetails->language]['href'] = $href;
+                            $languagesForCurrentDomain[$pageDetails->language]['href'] = $href . ($secondQueryString ? '?' . $secondQueryString : '');
                         }
                     }
 				}
@@ -205,62 +212,6 @@ class LsController {
 		}
 
 		return (int) $objRoot->ls_cnc_languageSelector_languageGroup === $masterRootId;
-	}
-
-	/**
-	 * Ermittelt den `dns`-Wert einer Root-Page.
-	 *
-	 * @param int $rootPageId ID der Root-Page
-	 * @return string|null `dns`-Wert oder null
-	 */
-	public function getRootPageDns(int $rootPageId): ?string
-	{
-		$objRoot = Database::getInstance()->prepare(
-			"SELECT dns, rootUseSSL FROM `tl_page` WHERE `id` = ?"
-		)->limit(1)->execute($rootPageId);
-
-		if (!$objRoot->numRows) {
-			return null;
-		}
-
-		return $objRoot->dns;
-	}
-
-	/**
-	 * Generiert eine absolute URL aus einer Root-Page-Zeile und einem relativen Pfad.
-	 *
-	 * @param object $rootPageRow Datenbankzeile der Root-Page (mit `dns`, `rootUseSSL`)
-	 * @param string $relativePath Relativer Pfad (z. B. aus `getFrontendUrl()`)
-	 * @return string Absolute URL
-	 */
-	public function buildAbsoluteUrl(object $rootPageRow, string $relativePath): string
-	{
-		$protocol = $rootPageRow->rootUseSSL ? 'https://' : 'http://';
-		$domain = $rootPageRow->dns;
-
-		$relativePath = ltrim($relativePath, '/');
-
-		return $protocol . $domain . '/' . $relativePath;
-	}
-
-	/**
-	 * Generiert eine absolute URL anhand einer Root-Page-ID und eines relativen Pfads.
-	 *
-	 * @param int $rootPageId ID der Root-Page
-	 * @param string $relativePath Relativer Pfad
-	 * @return string Absolute URL oder unveränderter Pfad bei Fehler
-	 */
-	public function buildAbsoluteUrlFromRootId(int $rootPageId, string $relativePath): string
-	{
-		$objRoot = Database::getInstance()->prepare(
-			"SELECT dns, rootUseSSL FROM `tl_page` WHERE `id` = ?"
-		)->limit(1)->execute($rootPageId);
-
-		if (!$objRoot->numRows || !$objRoot->dns) {
-			return $relativePath;
-		}
-
-		return $this->buildAbsoluteUrl($objRoot, $relativePath);
 	}
 
 	/**
