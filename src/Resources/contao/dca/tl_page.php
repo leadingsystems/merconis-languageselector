@@ -50,10 +50,10 @@ class tl_page_ls_cnc_languageSelector extends Backend {
             return;
         }
 
-        $GLOBALS['TL_DCA']['tl_page']['palettes']['root'] = preg_replace(
+        $GLOBALS['TL_DCA']['tl_page']['palettes']['rootfallback'] = preg_replace(
             '@([,;]language)([,;])@',
             '$1,ls_cnc_languageSelector_languageGroup$2',
-            $GLOBALS['TL_DCA']['tl_page']['palettes']['root']
+            $GLOBALS['TL_DCA']['tl_page']['palettes']['rootfallback']
         );
 
         $objSlaves = $this->Database->prepare(
