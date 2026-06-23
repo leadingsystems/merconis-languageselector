@@ -1,6 +1,9 @@
 Leading Systems Contao LanguageSelector bundle changelog
 ===========================================
 
+### 3.2.0 (2026-06-23)
+ * feature multidomain support
+
 ### 3.1.5 (2025-07-18)
  * improve page caching
 
