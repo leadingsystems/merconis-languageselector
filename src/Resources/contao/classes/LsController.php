@@ -25,9 +25,6 @@ class LsController {
 			$objPage = PageModel::findWithDetails($pageID);
 		}
 
-		/*
-		 * Ermitteln der Domain der aktuellen Root-Page
-		 */
 		if ($objPage->rootId) {
 			$objRootPage = Database::getInstance()->prepare("SELECT * FROM `tl_page` WHERE `id` = ?")
 											->limit(1)
@@ -37,85 +34,100 @@ class LsController {
 		}
 
 		$currentDomain = $objRootPage->dns;
+		$languageGroupId = (int) $objRootPage->ls_cnc_languageSelector_languageGroup;
 
-		/*
-		 * Ermitteln aller Root-Pages mit derselben Domain
-		 */
-		$objRootPagesWithSameDomain = Database::getInstance()->prepare("SELECT * FROM `tl_page` WHERE `type` = 'root' AND `dns` = ? AND `published` = 1 ORDER BY `sorting`")
-														->execute($currentDomain);
+		$useLanguageGroup = false;
+		$masterRootId = 0;
 
-		/*
-		 * Ermitteln aller Root-Page-Sprachen f�r die aktuelle Domain.
-		 * Dem Sprach-Array werden die zu den jeweiligen Sprachen passenden Verlinkungen hinterlegt. Beim Erstellen des Arrays
-		 * werden hier quasi als "Fallback" die Verlinkungen der Root-Pages hinterlegt. Können passendere korrespondierende
-		 * Seiten f�r eine Sprache ermittelt werden, so finden diese Verwendung, ist das aber nicht m�glich, so kommt eben
-		 * die hier schon eingetragene Root-Page zum Einsatz.
-		 */
+		if ($languageGroupId) {
+			$useLanguageGroup = true;
+			$masterRootId = $languageGroupId;
+		} else {
+			$objSlavesOfCurrent = Database::getInstance()->prepare(
+				"SELECT id FROM `tl_page` WHERE `ls_cnc_languageSelector_languageGroup` = ? LIMIT 1"
+			)->execute($objRootPage->id);
+
+			if ($objSlavesOfCurrent->numRows) {
+				$useLanguageGroup = true;
+				$masterRootId = (int) $objRootPage->id;
+			}
+		}
+
+		if ($useLanguageGroup) {
+			$objGroupRootPages = Database::getInstance()->prepare(
+				"SELECT * FROM `tl_page` WHERE `type` = 'root' AND `published` = 1"
+				. " AND (`id` = ? OR `ls_cnc_languageSelector_languageGroup` = ?)"
+				. " ORDER BY `sorting`"
+			)->execute($masterRootId, $masterRootId);
+		} else {
+			$objGroupRootPages = Database::getInstance()->prepare(
+				"SELECT * FROM `tl_page` WHERE `type` = 'root' AND `dns` = ? AND `published` = 1 ORDER BY `sorting`"
+			)->execute($currentDomain);
+		}
+
 		$languagesForCurrentDomain = array();
-		while ($objRootPagesWithSameDomain->next()) {
-		    /*
-		     * Load the languages array in every language so that we can show each language name in that language
-		     */
+		$groupRootDnsByLanguage = [];
+		while ($objGroupRootPages->next()) {
+			$groupRootDnsByLanguage[$objGroupRootPages->language] = $objGroupRootPages->dns;
 
-            $obj_pageModel = PageModel::findByAlias($objPage->type !== 'regular' || $objPage->language != $objRootPagesWithSameDomain->language ? $objRootPagesWithSameDomain->row()['alias'] : $objPage->row()['alias']);
+            $targetAlias = ($objPage->type !== 'regular' || $objPage->language != $objGroupRootPages->language)
+                ? $objGroupRootPages->row()['alias']
+                : $objPage->alias;
+            $objTargetPageCollection = PageModel::findByAlias($targetAlias);
+            $objTargetPage = $objTargetPageCollection->current();
 
-            if (!isset($GLOBALS['merconis-languageselector_globals']['cache_language_files'][$objRootPagesWithSameDomain->language])) {
-                System::loadLanguageFile('languages', $objRootPagesWithSameDomain->language, true);
-                $GLOBALS['merconis-languageselector_globals']['cache_language_files'][$objRootPagesWithSameDomain->language] = System::getContainer()->get('contao.intl.locales')->getLanguages();
-                /*
-                 * Just for safety, load the languages array in the current page language
-                 */
-                System::loadLanguageFile('languages', $objPage->language, true);
-            }
+			if (!in_array($objGroupRootPages->language, $languagesForCurrentDomain)) {
+				$targetHref = $objTargetPage->getFrontendUrl();
 
-			if (!in_array($objRootPagesWithSameDomain->language, $languagesForCurrentDomain)) {
-				$languagesForCurrentDomain[$objRootPagesWithSameDomain->language] = array(
-					'alias' => $objPage->language != $objRootPagesWithSameDomain->language ? $objRootPagesWithSameDomain->alias : $objPage->alias,
-					'id' => $objPage->language != $objRootPagesWithSameDomain->language ? $objRootPagesWithSameDomain->id : $objPage->id,
-					'href' => $obj_pageModel->current()->getFrontendUrl(),
-                    'languageTitle' => $GLOBALS['merconis-languageselector_globals']['cache_language_files'][$objRootPagesWithSameDomain->language][$objRootPagesWithSameDomain->language]
+				if ($useLanguageGroup && $objGroupRootPages->dns != $currentDomain) {
+					$targetHref = $objTargetPage->getAbsoluteUrl();
+				}
+
+				$locales = System::getContainer()->get('contao.intl.locales')->getLocales($objGroupRootPages->language);
+
+				$languagesForCurrentDomain[$objGroupRootPages->language] = array(
+					'alias' => $objPage->language != $objGroupRootPages->language ? $objGroupRootPages->alias : $objPage->alias,
+					'id' => $objPage->language != $objGroupRootPages->language ? $objGroupRootPages->id : $objPage->id,
+					'href' => $targetHref,
+					'languageTitle' => $locales[$objGroupRootPages->language] ?? $objGroupRootPages->language,
+					'languageCode' => str_replace('_', '-', $objGroupRootPages->language),
 				);
 			}
 		}
 
-		/*
-		 * Ermitteln der korrespondierenden Hauptsprach-Seiten-ID. Ist die Seite selbst Hauptsprachseite, so ist das
-		 * die eigene ID.
-		 */
-		$mainLanguageID = $objRootPage->fallback ? $objPage->id : $objPage->ls_cnc_languageSelector_correspondingMainLanguagePage;
+		$isMainLanguagePage = false;
+		if ($useLanguageGroup) {
+			$isMainLanguagePage = ((int) $objRootPage->id === $masterRootId);
+		} else {
+			$isMainLanguagePage = (bool) $objRootPage->fallback;
+		}
+
+		$mainLanguageID = $isMainLanguagePage ? $objPage->id : $objPage->ls_cnc_languageSelector_correspondingMainLanguagePage;
 
 		if ($mainLanguageID) {
-			/*
-			 * Ermitteln aller Seiten, denen die entsprechende Hauptsprach-Seiten-ID als korrespondierende Seite hinterlegt ist.
-			 */
 			$objCorrespondingPages = Database::getInstance()->prepare("SELECT * FROM `tl_page` WHERE (`ls_cnc_languageSelector_correspondingMainLanguagePage` = ? OR `id` = ?) AND `published` = 1")
 													->execute($mainLanguageID, $mainLanguageID);
 
-			/*
-			 * Hinterlegen der Sprach-Seiten in das Sprach-Array
-			 */
 			while ($objCorrespondingPages->next()) {
 				$pageDetails = PageModel::findWithDetails($objCorrespondingPages->id);
-				if ($pageDetails->domain != $currentDomain) {
-					continue;
+
+				if ($useLanguageGroup) {
+					if (!$this->belongsToSameLanguageGroup($pageDetails->rootId, $masterRootId)) {
+						continue;
+					}
+				} else {
+					if ($pageDetails->domain != $currentDomain) {
+						continue;
+					}
 				}
+
 				if (isset($languagesForCurrentDomain[$pageDetails->language])) {
 					$languagesForCurrentDomain[$pageDetails->language]['alias'] = $objCorrespondingPages->alias;
 					$languagesForCurrentDomain[$pageDetails->language]['id'] = $objCorrespondingPages->id;
 
-					/*
-					 * create query string
-					 */
 					$queryString = '';
 					$secondQueryString = '';
 					if (isset($_GET) && is_array($_GET)) {
-						/*
-						 * Some Get-Parameters may cause problems and therfore have to be excluded. The parameter "articles" e.g. should not be used in the url for
-						 * another language because it always is a reference to a unique article alias which does only exist in the current language page.
-						 * If an article is opened and this parameter would be used in the link to another language an error (item does not exist)  would occur.
-						 * Perhaps there are more parameters which cause problems and maybe there are some situations in which even these problematic parameters
-						 * should not be excluded so maybe it would be a good idea to allow the website admin to define the parameters to exclude in the contao settings.
-						 */
 						$arrExcludedGetParameters = array('articles','auto_item','language');
 
 						foreach ($_GET as $k => $v) {
@@ -132,14 +144,32 @@ class LsController {
 					}
 
                     if(Input::get('auto_item')) {
-                        $obj_targetPageCollection = PageModel::findById($pageDetails->pid);
-                        if ($obj_targetPageCollection->current()->type === 'regular') {
-                            $languagesForCurrentDomain[$pageDetails->language]['href'] = $obj_targetPageCollection->current()->getFrontendUrl();
+                        $objTargetPageCollection = PageModel::findById($pageDetails->pid);
+                        $objTargetPage = $objTargetPageCollection->current();
+
+                        if ($objTargetPage->type === 'regular') {
+                            $href = $objTargetPage->getFrontendUrl();
+                            $targetRootDns = $groupRootDnsByLanguage[$pageDetails->language] ?? null;
+
+                            if ($targetRootDns && $targetRootDns != $currentDomain) {
+                                $href = $objTargetPage->getAbsoluteUrl();
+                            }
+
+                            $languagesForCurrentDomain[$pageDetails->language]['href'] = $href;
                         }
                     } else {
-                        $obj_targetPageCollection = PageModel::findById($objCorrespondingPages->row()['id']);
-                        if ($obj_targetPageCollection->current()->type === 'regular') {
-                            $languagesForCurrentDomain[$pageDetails->language]['href'] = $obj_targetPageCollection->current()->getFrontendUrl($queryString) . ($secondQueryString ? '?' . $secondQueryString : '');
+                        $objTargetPageCollection = PageModel::findById($objCorrespondingPages->row()['id']);
+                        $objTargetPage = $objTargetPageCollection->current();
+
+                        if ($objTargetPage->type === 'regular') {
+                            $href = $objTargetPage->getFrontendUrl($queryString);
+                            $targetRootDns = $groupRootDnsByLanguage[$pageDetails->language] ?? null;
+
+                            if ($targetRootDns && $targetRootDns != $currentDomain) {
+                                $href = $objTargetPage->getAbsoluteUrl($queryString);
+                            }
+
+                            $languagesForCurrentDomain[$pageDetails->language]['href'] = $href . ($secondQueryString ? '?' . $secondQueryString : '');
                         }
                     }
 				}
@@ -157,9 +187,37 @@ class LsController {
 		return $languagesForCurrentDomain;
 	}
 
-	/*
-	 * Diese Funktion liefert zu einer pageID die pageID der korrespondierenden Hauptsprachseite
-	 * bzw. gibt die pageID wieder zurück, sofern es sich dabei bereits um die Hauptsprachseite handelt.
+	/**
+	 * Prüft, ob eine Root-Page zur angegebenen Language Group gehört.
+	 *
+	 * @param int $rootPageId ID der zu prüfenden Root-Page
+	 * @param int $masterRootId ID der Master-Root-Page der Gruppe
+	 * @return bool
+	 */
+	public function belongsToSameLanguageGroup(int $rootPageId, int $masterRootId): bool
+	{
+		if ($rootPageId === $masterRootId) {
+			return true;
+		}
+
+		$objRoot = Database::getInstance()->prepare(
+			"SELECT ls_cnc_languageSelector_languageGroup FROM `tl_page` WHERE `id` = ?"
+		)->limit(1)->execute($rootPageId);
+
+		if (!$objRoot->numRows) {
+			return false;
+		}
+
+		return (int) $objRoot->ls_cnc_languageSelector_languageGroup === $masterRootId;
+	}
+
+	/**
+	 * Liefert zu einer `pageID` die `pageID` der korrespondierenden Hauptsprachseite
+	 * bzw. gibt die `pageID` zurück, sofern es sich bereits um die Hauptsprachseite handelt.
+	 *
+	 * Hauptsprachseite (Root-Page ist Master oder Fallback ohne Language Group) => eigene ID.
+	 * Nebenseite mit Zuordnung in derselben Gruppe => zugeordnete ID.
+	 * Keine Zuordnung oder `false` => `0`.
 	 */
 	public function getMainlanguagePageIDForPageID($pageID = false) {
 		$mainLanguagePageID = 0;
@@ -176,16 +234,47 @@ class LsController {
 							->limit(1)
 							->execute($objPageDetails->rootId);
 
-		/*
-		 * Ermitteln der korrespondierenden Hauptsprach-Seiten-ID. Ist die Seite selbst Hauptsprachseite, so ist das
-		 * die eigene ID.
-		 */
-		if ($objRootPage->fallback) {
+		$languageGroupId = (int) $objRootPage->ls_cnc_languageSelector_languageGroup;
+		$useLanguageGroup = false;
+		$masterRootId = 0;
+		$isMaster = false;
+
+		if ($languageGroupId) {
+			$useLanguageGroup = true;
+			$masterRootId = $languageGroupId;
+		} else {
+			$objSlavesCheck = Database::getInstance()->prepare(
+				"SELECT id FROM `tl_page` WHERE `ls_cnc_languageSelector_languageGroup` = ? LIMIT 1"
+			)->execute($objRootPage->id);
+
+			if ($objSlavesCheck->numRows) {
+				$useLanguageGroup = true;
+				$isMaster = true;
+				$masterRootId = (int) $objRootPage->id;
+			}
+		}
+
+		$isMainLanguagePage = $isMaster || (!$useLanguageGroup && $objRootPage->fallback);
+
+		if ($isMainLanguagePage) {
 			$mainLanguagePageID = $pageID;
 		} else {
-			$obj_correspondingMainLanguagePageDetails = PageModel::findWithDetails($objPageDetails->ls_cnc_languageSelector_correspondingMainLanguagePage);
-			if ($obj_correspondingMainLanguagePageDetails->domain == $objPageDetails->domain) {
-				$mainLanguagePageID = $objPageDetails->ls_cnc_languageSelector_correspondingMainLanguagePage;
+			$correspondingId = (int) $objPageDetails->ls_cnc_languageSelector_correspondingMainLanguagePage;
+
+			if ($correspondingId) {
+				$obj_correspondingPage = PageModel::findWithDetails($correspondingId);
+
+				if ($obj_correspondingPage !== null) {
+					if ($useLanguageGroup) {
+						if ($this->belongsToSameLanguageGroup((int) $obj_correspondingPage->rootId, $masterRootId)) {
+							$mainLanguagePageID = $correspondingId;
+						}
+					} else {
+						if ($obj_correspondingPage->domain == $objPageDetails->domain) {
+							$mainLanguagePageID = $correspondingId;
+						}
+					}
+				}
 			}
 		}
 

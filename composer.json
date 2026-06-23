@@ -13,6 +13,17 @@
     "php": "^7.4 || ^8.0",
     "contao/core-bundle": "^4.13 || ^5.0"
   },
+  "require-dev": {
+    "phpunit/phpunit": "^10.5"
+  },
+  "scripts": {
+    "test": "vendor/bin/phpunit"
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "LeadingSystems\\LanguageSelectorBundle\\Tests\\": "tests/"
+    }
+  },
   "autoload": {
     "psr-4": {
       "LeadingSystems\\LanguageSelectorBundle\\": "src/"
@@ -32,6 +43,13 @@
     "branch-alias": {
       "dev-master": "3.1.x-dev",
       "dev-develop": "3.1.x-dev"
+    }
+  },
+  "config": {
+    "allow-plugins": {
+      "contao-components/installer": true,
+      "contao/manager-plugin": true,
+      "php-http/discovery": true
     }
   }
 }

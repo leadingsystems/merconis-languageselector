@@ -2,7 +2,12 @@
 /composer.lock
 /vendor/
 
-# PhpUnit
+# PHPUnit
+/.phpunit.cache/
 /phpunit.xml
 
+# IDE
 .idea/
+
+# Build
+/build/
