@@ -1,7 +1,14 @@
 <div class="ls_languageSelector <?php echo $this->class; ?> block"<?php echo $this->cssID; ?><?php if ($this->style): ?> style="<?php echo $this->style; ?>"<?php endif; ?>>
 <!-- indexer::stop -->
     <div class="current-language-info">
-        <?php echo sprintf($GLOBALS['TL_LANG']['MSC']['infoTextCurrentLanguage'], $this->correspondingPages[$this->currentLanguage]['languageTitle']); ?>
+        <?php echo sprintf(
+            $GLOBALS['TL_LANG']['MSC']['infoTextCurrentLanguage'],
+            '<span class="current-language" lang="'
+            . $this->correspondingPages[$this->currentLanguage]['languageCode']
+            . '">'
+            . $this->correspondingPages[$this->currentLanguage]['languageTitle']
+            . '</span>'
+        ); ?>
     </div>
     <?php
         if (count($this->correspondingPages) > 1) {
@@ -15,8 +22,12 @@
                             continue;
                         }
                         ?>
-                        <li>
-                            <a class="available-language" href="<?php echo $arr_correspondingPage['href'] ?>" title="<?php echo $arr_correspondingPage['languageTitle'] ?>">
+                        <li lang="<?php echo $arr_correspondingPage['languageCode'] ?>">
+                            <a class="available-language"
+                               href="<?php echo $arr_correspondingPage['href'] ?>"
+                               hreflang="<?php echo $arr_correspondingPage['languageCode'] ?>"
+                               lang="<?php echo $arr_correspondingPage['languageCode'] ?>"
+                               title="<?php echo $arr_correspondingPage['languageTitle'] ?>">
                                 <?php echo $arr_correspondingPage['languageTitle']; ?>
                             </a>
                         </li>
