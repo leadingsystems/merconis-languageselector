@@ -60,11 +60,29 @@ if (!class_exists('Contao\Environment', false)) {
 
 if (!class_exists('Contao\System', false)) {
     eval('namespace Contao; class System {
+        /** @var array<string, array<string, string>> */
+        public static array $testLocales = [];
+
         public static function loadLanguageFile($name, $language = null, $blnNoCache = false): void {}
         public static function getContainer() {
-            return new class {
+            $locales = self::$testLocales;
+            return new class($locales) {
+                private array $locales;
+                public function __construct(array $locales) { $this->locales = $locales; }
                 public function get(string $id) {
-                    return new class { public function getLanguages() { return []; } };
+                    $locales = $this->locales;
+                    return new class($locales) {
+                        private array $locales;
+                        public function __construct(array $locales) { $this->locales = $locales; }
+                        public function getLocales(?string $displayLocale = null): array {
+                            if ($displayLocale !== null && isset($this->locales[$displayLocale])) {
+                                return $this->locales[$displayLocale];
+                            }
+                            $merged = [];
+                            foreach ($this->locales as $entries) { $merged = array_merge($merged, $entries); }
+                            return $merged;
+                        }
+                    };
                 }
             };
         }

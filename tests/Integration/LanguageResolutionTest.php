@@ -17,13 +17,14 @@ class LanguageResolutionTest extends TestCase
     {
         parent::setUp();
 
-        $GLOBALS['merconis-languageselector_globals'] = [
-            'cache_language_files' => [
-                'de' => ['de' => 'Deutsch'],
-                'en' => ['en' => 'English'],
-                'fr' => ['fr' => 'Francais'],
-            ],
+        \Contao\System::$testLocales = [
+            'de' => ['de' => 'Deutsch', 'en' => 'Englisch', 'fr' => 'Französisch', 'de_AT' => 'Deutsch (Österreich)'],
+            'en' => ['de' => 'German', 'en' => 'English', 'fr' => 'French', 'de_AT' => 'Austrian German'],
+            'fr' => ['de' => 'allemand', 'en' => 'anglais', 'fr' => 'français', 'de_AT' => 'allemand (Autriche)'],
+            'de_AT' => ['de' => 'Deutsch', 'en' => 'Englisch', 'fr' => 'Französisch', 'de_AT' => 'Deutsch (Österreich)'],
         ];
+
+        $GLOBALS['merconis-languageselector_globals'] = [];
         $GLOBALS['LS_LANGUAGESELECTOR_HOOKS'] = [];
         $_GET = [];
         $_SERVER['request'] = '';
@@ -47,6 +48,7 @@ class LanguageResolutionTest extends TestCase
         PageModel::$testCallback = null;
         PageModel::$findByIdCallback = null;
         PageModel::$findByAliasCallback = null;
+        \Contao\System::$testLocales = [];
         $GLOBALS['merconis-languageselector_globals'] = [];
         $_GET = [];
         parent::tearDown();
@@ -80,6 +82,14 @@ class LanguageResolutionTest extends TestCase
         $this->assertArrayHasKey('en', $result);
         $this->assertArrayHasKey('fr', $result);
         $this->assertCount(3, $result);
+
+        $this->assertSame('de', $result['de']['languageCode']);
+        $this->assertSame('en', $result['en']['languageCode']);
+        $this->assertSame('fr', $result['fr']['languageCode']);
+
+        $this->assertSame('Deutsch', $result['de']['languageTitle']);
+        $this->assertSame('English', $result['en']['languageTitle']);
+        $this->assertSame('français', $result['fr']['languageTitle']);
     }
 
     /**
@@ -109,6 +119,9 @@ class LanguageResolutionTest extends TestCase
         $this->assertArrayHasKey('en', $result);
         $this->assertArrayNotHasKey('fr', $result);
         $this->assertCount(2, $result);
+
+        $this->assertSame('de', $result['de']['languageCode']);
+        $this->assertSame('en', $result['en']['languageCode']);
     }
 
     /**
@@ -282,6 +295,81 @@ class LanguageResolutionTest extends TestCase
         $result = $this->controller->getCorrespondingLanguagesForCurrentRootPage();
 
         $this->assertSame('https://shop.com/catalog', $result['en']['href']);
+    }
+
+    /**
+     * Regionale Locale-Codes (`de_AT`) liefern BCP-47-Format (`de-AT`) als `languageCode`
+     * und die qualifizierte Eigenbezeichnung als `languageTitle`.
+     */
+    public function testRegionalLocaleCodeReturnsBcp47FormatAndEndonym(): void
+    {
+        $rootPages = [
+            1 => ['id' => 1, 'type' => 'root', 'language' => 'de', 'dns' => 'example.com', 'published' => 1, 'sorting' => 10, 'alias' => 'de-root', 'fallback' => 1, 'ls_cnc_languageSelector_languageGroup' => 0, 'rootUseSSL' => true, 'rootId' => 1],
+            2 => ['id' => 2, 'type' => 'root', 'language' => 'de_AT', 'dns' => 'example.com', 'published' => 1, 'sorting' => 20, 'alias' => 'at-root', 'fallback' => 0, 'ls_cnc_languageSelector_languageGroup' => 0, 'rootUseSSL' => true, 'rootId' => 2],
+        ];
+
+        $currentPage = (object) [
+            'id' => 10, 'rootId' => 1, 'language' => 'de', 'type' => 'regular',
+            'alias' => 'produkte', 'ls_cnc_languageSelector_correspondingMainLanguagePage' => 0,
+        ];
+
+        $this->setupDatabaseForDomainEquality($rootPages, $currentPage, 'example.com');
+        $this->setupPageModels($rootPages, $currentPage);
+
+        $GLOBALS['objPage'] = $currentPage;
+
+        $result = $this->controller->getCorrespondingLanguagesForCurrentRootPage();
+
+        $this->assertArrayHasKey('de', $result);
+        $this->assertArrayHasKey('de_AT', $result);
+        $this->assertCount(2, $result);
+
+        $this->assertSame('de', $result['de']['languageCode']);
+        $this->assertSame('de-AT', $result['de_AT']['languageCode']);
+
+        $this->assertSame('Deutsch', $result['de']['languageTitle']);
+        $this->assertSame('Deutsch (Österreich)', $result['de_AT']['languageTitle']);
+    }
+
+    /**
+     * Mehrere regionale Locale-Codes in einer Language Group liefern
+     * jeweils das korrekte Endonym und BCP-47-Format.
+     */
+    public function testMultipleRegionalLocaleCodesInLanguageGroup(): void
+    {
+        \Contao\System::$testLocales = array_merge(\Contao\System::$testLocales, [
+            'en_US' => ['en_US' => 'English (United States)', 'de' => 'Deutsch', 'en' => 'Englisch'],
+        ]);
+
+        $rootPages = [
+            1 => ['id' => 1, 'type' => 'root', 'language' => 'de', 'dns' => 'shop.de', 'published' => 1, 'sorting' => 10, 'alias' => 'de-root', 'fallback' => 1, 'ls_cnc_languageSelector_languageGroup' => 0, 'rootUseSSL' => true, 'rootId' => 1],
+            2 => ['id' => 2, 'type' => 'root', 'language' => 'de_AT', 'dns' => 'shop.at', 'published' => 1, 'sorting' => 20, 'alias' => 'at-root', 'fallback' => 1, 'ls_cnc_languageSelector_languageGroup' => 1, 'rootUseSSL' => true, 'rootId' => 2],
+            3 => ['id' => 3, 'type' => 'root', 'language' => 'en_US', 'dns' => 'shop.com', 'published' => 1, 'sorting' => 30, 'alias' => 'us-root', 'fallback' => 1, 'ls_cnc_languageSelector_languageGroup' => 1, 'rootUseSSL' => true, 'rootId' => 3],
+        ];
+
+        $currentPage = (object) [
+            'id' => 10, 'rootId' => 1, 'language' => 'de', 'type' => 'regular',
+            'alias' => 'produkte', 'ls_cnc_languageSelector_correspondingMainLanguagePage' => 0,
+        ];
+
+        $this->setupDatabaseForLanguageGroup($rootPages, $currentPage);
+        $this->setupPageModels($rootPages, $currentPage);
+
+        $GLOBALS['objPage'] = $currentPage;
+
+        $result = $this->controller->getCorrespondingLanguagesForCurrentRootPage();
+
+        $this->assertArrayHasKey('de', $result);
+        $this->assertArrayHasKey('de_AT', $result);
+        $this->assertArrayHasKey('en_US', $result);
+
+        $this->assertSame('de', $result['de']['languageCode']);
+        $this->assertSame('de-AT', $result['de_AT']['languageCode']);
+        $this->assertSame('en-US', $result['en_US']['languageCode']);
+
+        $this->assertSame('Deutsch', $result['de']['languageTitle']);
+        $this->assertSame('Deutsch (Österreich)', $result['de_AT']['languageTitle']);
+        $this->assertSame('English (United States)', $result['en_US']['languageTitle']);
     }
 
     private function setupDatabaseForLanguageGroup(array $rootPages, object $currentPage, array $pages = []): void

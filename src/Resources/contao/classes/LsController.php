@@ -76,12 +76,6 @@ class LsController {
             $objTargetPageCollection = PageModel::findByAlias($targetAlias);
             $objTargetPage = $objTargetPageCollection->current();
 
-            if (!isset($GLOBALS['merconis-languageselector_globals']['cache_language_files'][$objGroupRootPages->language])) {
-                System::loadLanguageFile('languages', $objGroupRootPages->language, true);
-                $GLOBALS['merconis-languageselector_globals']['cache_language_files'][$objGroupRootPages->language] = System::getContainer()->get('contao.intl.locales')->getLanguages();
-                System::loadLanguageFile('languages', $objPage->language, true);
-            }
-
 			if (!in_array($objGroupRootPages->language, $languagesForCurrentDomain)) {
 				$targetHref = $objTargetPage->getFrontendUrl();
 
@@ -89,11 +83,14 @@ class LsController {
 					$targetHref = $objTargetPage->getAbsoluteUrl();
 				}
 
+				$locales = System::getContainer()->get('contao.intl.locales')->getLocales($objGroupRootPages->language);
+
 				$languagesForCurrentDomain[$objGroupRootPages->language] = array(
 					'alias' => $objPage->language != $objGroupRootPages->language ? $objGroupRootPages->alias : $objPage->alias,
 					'id' => $objPage->language != $objGroupRootPages->language ? $objGroupRootPages->id : $objPage->id,
 					'href' => $targetHref,
-                    'languageTitle' => $GLOBALS['merconis-languageselector_globals']['cache_language_files'][$objGroupRootPages->language][$objGroupRootPages->language]
+					'languageTitle' => $locales[$objGroupRootPages->language] ?? $objGroupRootPages->language,
+					'languageCode' => str_replace('_', '-', $objGroupRootPages->language),
 				);
 			}
 		}
